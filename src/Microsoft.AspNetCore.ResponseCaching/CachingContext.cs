@@ -2,15 +2,16 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.AspNet.Http;
-using Microsoft.Framework.Caching.Memory;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Primitives;
 
-namespace Microsoft.AspNet.ResponseCaching
+namespace Microsoft.AspNetCore.ResponseCaching
 {
-    internal class CachingContext
+    public struct CachingContext
     {
         private string _cacheKey;
 
@@ -18,6 +19,12 @@ namespace Microsoft.AspNet.ResponseCaching
         {
             HttpContext = httpContext;
             Cache = cache;
+
+            _cacheKey = null;
+            OriginalResponseStream = null;
+            Buffer = null;
+            ResponseStarted = false;
+            CacheResponse = false;
         }
 
         private HttpContext HttpContext { get; }
@@ -32,7 +39,7 @@ namespace Microsoft.AspNet.ResponseCaching
 
         private bool CacheResponse { get; set; }
 
-        internal bool CheckRequestAllowsCaching()
+        public bool CheckRequestAllowsCaching()
         {
             // Verify the method
             // TODO: What other methods should be supported?
@@ -78,9 +85,12 @@ namespace Microsoft.AspNet.ResponseCaching
                 var response = HttpContext.Response;
                 // Copy the cached status code and response headers
                 response.StatusCode = cacheEntry.StatusCode;
-                foreach (var pair in cacheEntry.Headers)
+
+                var headers = cacheEntry.Headers;
+                for (var i = 0; i < headers.Count; i++)
                 {
-                    response.Headers.SetValues(pair.Key, pair.Value);
+                    var entry = headers[i];
+                    response.Headers[entry.Key] = entry.Value;
                 }
 
                 // TODO: Update cache headers (Age)
@@ -124,7 +134,20 @@ namespace Microsoft.AspNet.ResponseCaching
                 // Store the buffer to cache
                 var cacheEntry = new ResponseCacheEntry();
                 cacheEntry.StatusCode = HttpContext.Response.StatusCode;
-                cacheEntry.Headers = HttpContext.Response.Headers.ToList();
+
+                var headers = HttpContext.Response.Headers;
+                var count = headers.Count
+                    - (headers.ContainsKey("Date") ? 1 : 0);
+                var cachedHeaders = new List<KeyValuePair<string, StringValues>>(count);
+                foreach (var entry in headers)
+                {
+                    // Don't copy Date header
+                    if (entry.Key != "Date")
+                    {
+                        cachedHeaders.Add(entry);
+                    }
+                }
+
                 cacheEntry.Body = Buffer.ToArray();
                 Cache.Set(_cacheKey, cacheEntry); // TODO: Timeouts
             }

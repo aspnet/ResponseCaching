@@ -1,9 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.22823.1
+VisualStudioVersion = 14.0.25123.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Microsoft.AspNet.ResponseCaching", "src\Microsoft.AspNet.ResponseCaching\Microsoft.AspNet.ResponseCaching.xproj", "{D1031270-DBD3-4F02-A3DC-3E7DADE8EBE6}"
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Microsoft.AspNetCore.ResponseCaching", "src\Microsoft.AspNetCore.ResponseCaching\Microsoft.AspNetCore.ResponseCaching.xproj", "{D1031270-DBD3-4F02-A3DC-3E7DADE8EBE6}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{367AABAF-E03C-4491-A9A7-BDDE8903D1B4}"
 EndProject
@@ -18,7 +18,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		global.json = global.json
 	EndProjectSection
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Microsoft.AspNet.ResponseCaching.Tests", "test\Microsoft.AspNet.ResponseCaching.Tests\Microsoft.AspNet.ResponseCaching.Tests.xproj", "{151B2027-3936-44B9-A4A0-E1E5902125AB}"
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Microsoft.AspNetCore.ResponseCaching.Tests", "test\Microsoft.AspNetCore.ResponseCaching.Tests\Microsoft.AspNetCore.ResponseCaching.Tests.xproj", "{151B2027-3936-44B9-A4A0-E1E5902125AB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
