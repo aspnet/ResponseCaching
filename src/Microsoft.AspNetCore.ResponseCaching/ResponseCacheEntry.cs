@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using Microsoft.Extensions.Primitives;
+using System;
 
 namespace Microsoft.AspNetCore.ResponseCaching
 {
@@ -11,5 +12,6 @@ namespace Microsoft.AspNetCore.ResponseCaching
         public int StatusCode { get; set; }
         public List<KeyValuePair<string, StringValues>> Headers { get; set; }
         public byte[] Body { get; set; }
+        public DateTimeOffset Created { get; set; }
     }
 }
