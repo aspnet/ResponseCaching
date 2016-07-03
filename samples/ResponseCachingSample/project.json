@@ -1,0 +1,36 @@
+﻿{
+  "version": "0.1.0-*",
+  "buildOptions": {
+    "emitEntryPoint": true,
+    "preserveCompilationContext": true
+  },
+
+  "dependencies": {
+    "Microsoft.NETCore.Platforms": "1.0.1-*",
+    "Microsoft.AspNetCore.Server.IISIntegration": "1.0.0-*",
+    "Microsoft.AspNetCore.Server.Kestrel": "1.0.0-*",
+    "Microsoft.Extensions.Caching.Memory": "1.0.0-*",
+    "Microsoft.AspNetCore.Http.Abstractions": "1.0.0-*",
+    "Microsoft.AspNetCore.Http.Extensions": "1.0.0-*",
+    "Microsoft.AspNetCore.ResponseCaching": "0.1.0-*"
+  },
+
+  "frameworks": {
+    "net451": {},
+    "netcoreapp1.0": {
+      "dependencies": {
+        "Microsoft.NETCore.App": {
+          "version": "1.0.0-*",
+          "type": "platform"
+        },
+        "System.Console": "4.0.0-*"
+      }
+    }
+  },
+
+  "runtimeOptions": {
+    "configProperties": {
+      "System.GC.Server": true
+    }
+  }
+}

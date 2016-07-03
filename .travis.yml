@@ -1,0 +1,23 @@
+language: csharp
+sudo: required
+dist: trusty
+addons:
+  apt:
+    packages:
+    - libunwind8
+mono:
+  - 4.0.5
+os:
+  - linux
+  - osx
+osx_image: xcode7.1
+branches:
+  only:
+    - master
+    - release
+    - dev
+    - /^(.*\/)?ci-.*$/
+before_install:
+  - if test "$TRAVIS_OS_NAME" == "osx"; then brew update; brew install openssl; brew link --force openssl; fi
+script:
+  - ./build.sh --quiet verify
