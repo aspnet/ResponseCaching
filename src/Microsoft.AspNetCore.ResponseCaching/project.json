@@ -1,11 +1,17 @@
 {
   "version": "0.1.0-*",
   "description": "Middleware that automatically caches HTTP responses on the server.",
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/aspnet/ResponseCaching"
+  "packOptions": {
+    "repository": {
+      "type": "git",
+      "url": "git://github.com/aspnet/ResponseCaching"
+    },
+    "tags": [
+      "aspnetcore",
+      "response cache"
+    ]
   },
-  "compilationOptions": {
+  "buildOptions": {
     "warningsAsErrors": true
   },
   "dependencies": {
@@ -20,9 +26,6 @@
       }
     },
     "netstandard1.3": {
-      "imports": [
-        "portable-net451+win8"
-      ]
     }
   }
 }
