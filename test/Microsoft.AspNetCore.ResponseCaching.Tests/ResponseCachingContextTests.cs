@@ -656,6 +656,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
                 httpContext,
                 new TestResponseCache(),
                 new SystemClock(),
+                null,
                 cacheabilityValidator,
                 cacheKeySuffixProvider);
         }
