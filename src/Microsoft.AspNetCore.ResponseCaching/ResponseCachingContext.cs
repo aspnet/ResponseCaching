@@ -10,13 +10,13 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Http.Headers;
 using Microsoft.AspNetCore.ResponseCaching.Internal;
+using Microsoft.Extensions.ObjectPool;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
-using Microsoft.Extensions.ObjectPool;
 
 namespace Microsoft.AspNetCore.ResponseCaching
 {
-    public class ResponseCachingContext
+    internal class ResponseCachingContext
     {
         private static readonly CacheControlHeaderValue EmptyCacheControl = new CacheControlHeaderValue();
 
@@ -38,7 +38,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
         private TimeSpan _cachedResponseValidFor;
         internal DateTimeOffset _responseTime;
         
-        public ResponseCachingContext(
+        internal ResponseCachingContext(
             HttpContext httpContext,
             IResponseCache cache,
             ObjectPool<StringBuilder> builderPool,
