@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.IO;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
@@ -53,7 +54,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
                 "BaseKey",
                 new CachedResponse()
                 {
-                    Body = new byte[0]
+                    Body = new MemoryStream(new byte[0])
                 },
                 TimeSpan.Zero);
 
@@ -92,7 +93,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
                 "BaseKeyVaryKey2",
                 new CachedResponse()
                 {
-                    Body = new byte[0]
+                    Body = new MemoryStream(new byte[0])
                 },
                 TimeSpan.Zero);
 
@@ -425,78 +426,6 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         }
 
         [Fact]
-        public async Task FinalizeCacheBody_StoreResponseBodySeparately_IfLargerThanLimit()
-        {
-            var store = new TestResponseCacheStore();
-            var middleware = TestUtils.CreateTestMiddleware(store);
-            var context = TestUtils.CreateTestContext();
-
-            middleware.ShimResponseStream(context);
-            await context.HttpContext.Response.WriteAsync(new string('0', 70 * 1024));
-
-            context.ShouldCacheResponse = true;
-            context.CachedResponse = new CachedResponse()
-            {
-                BodyKeyPrefix = FastGuid.NewGuid().IdString
-            };
-            context.BaseKey = "BaseKey";
-            context.CachedResponseValidFor = TimeSpan.FromSeconds(10);
-
-            await middleware.FinalizeCacheBodyAsync(context);
-
-            Assert.Equal(2, store.SetCount);
-        }
-
-        [Fact]
-        public async Task FinalizeCacheBody_StoreResponseBodyInCachedResponse_IfSmallerThanLimit()
-        {
-            var store = new TestResponseCacheStore();
-            var middleware = TestUtils.CreateTestMiddleware(store);
-            var context = TestUtils.CreateTestContext();
-
-            middleware.ShimResponseStream(context);
-            await context.HttpContext.Response.WriteAsync(new string('0', 70 * 1024 - 1));
-
-            context.ShouldCacheResponse = true;
-            context.CachedResponse = new CachedResponse()
-            {
-                BodyKeyPrefix = FastGuid.NewGuid().IdString
-            };
-            context.BaseKey = "BaseKey";
-            context.CachedResponseValidFor = TimeSpan.FromSeconds(10);
-
-            await middleware.FinalizeCacheBodyAsync(context);
-
-            Assert.Equal(1, store.SetCount);
-        }
-
-        [Fact]
-        public async Task FinalizeCacheBody_StoreResponseBodySeparately_LimitIsConfigurable()
-        {
-            var store = new TestResponseCacheStore();
-            var middleware = TestUtils.CreateTestMiddleware(store, new ResponseCacheOptions()
-            {
-                MinimumSplitBodySize = 2048
-            });
-            var context = TestUtils.CreateTestContext();
-
-            middleware.ShimResponseStream(context);
-            await context.HttpContext.Response.WriteAsync(new string('0', 1024));
-
-            context.ShouldCacheResponse = true;
-            context.CachedResponse = new CachedResponse()
-            {
-                BodyKeyPrefix = FastGuid.NewGuid().IdString
-            };
-            context.BaseKey = "BaseKey";
-            context.CachedResponseValidFor = TimeSpan.FromSeconds(10);
-
-            await middleware.FinalizeCacheBodyAsync(context);
-
-            Assert.Equal(1, store.SetCount);
-        }
-
-        [Fact]
         public async Task FinalizeCacheBody_Cache_IfContentLengthMatches()
         {
             var store = new TestResponseCacheStore();
@@ -508,10 +437,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             await context.HttpContext.Response.WriteAsync(new string('0', 10));
 
             context.ShouldCacheResponse = true;
-            context.CachedResponse = new CachedResponse()
-            {
-                BodyKeyPrefix = FastGuid.NewGuid().IdString
-            };
+            context.CachedResponse = new CachedResponse();
             context.BaseKey = "BaseKey";
             context.CachedResponseValidFor = TimeSpan.FromSeconds(10);
 
@@ -532,10 +458,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             await context.HttpContext.Response.WriteAsync(new string('0', 10));
 
             context.ShouldCacheResponse = true;
-            context.CachedResponse = new CachedResponse()
-            {
-                BodyKeyPrefix = FastGuid.NewGuid().IdString
-            };
+            context.CachedResponse = new CachedResponse();
             context.BaseKey = "BaseKey";
             context.CachedResponseValidFor = TimeSpan.FromSeconds(10);
 
@@ -555,10 +478,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             await context.HttpContext.Response.WriteAsync(new string('0', 10));
 
             context.ShouldCacheResponse = true;
-            context.CachedResponse = new CachedResponse()
-            {
-                BodyKeyPrefix = FastGuid.NewGuid().IdString
-            };
+            context.CachedResponse = new CachedResponse();
             context.BaseKey = "BaseKey";
             context.CachedResponseValidFor = TimeSpan.FromSeconds(10);
 

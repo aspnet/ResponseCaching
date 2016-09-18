@@ -19,11 +19,6 @@ namespace Microsoft.AspNetCore.Builder
         public bool UseCaseSensitivePaths { get; set; } = false;
 
         /// <summary>
-        /// The smallest size in bytes for which the headers and body of the response will be stored separately. The default is set to 70 KB.
-        /// </summary>
-        public long MinimumSplitBodySize { get; set; } = 70 * 1024;
-
-        /// <summary>
         /// For testing purposes only.
         /// </summary>
         [EditorBrowsable(EditorBrowsableState.Never)]

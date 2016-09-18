@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.IO;
 using System.Linq;
 using System.Text;
 using Microsoft.AspNetCore.Http;
@@ -32,34 +33,6 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         }
 
         [Fact]
-        public void RoundTrip_CachedResponseBody_Succeeds()
-        {
-            var cachedResponseBody = new CachedResponseBody()
-            {
-                Body = Encoding.ASCII.GetBytes("Hello world"),
-            };
-
-            AssertCachedResponseBodyEqual(cachedResponseBody, (CachedResponseBody)CacheEntrySerializer.Deserialize(CacheEntrySerializer.Serialize(cachedResponseBody)));
-        }
-
-        [Fact]
-        public void RoundTrip_CachedResponseWithoutBody_Succeeds()
-        {
-            var headers = new HeaderDictionary();
-            headers["keyA"] = "valueA";
-            headers["keyB"] = "valueB";
-            var cachedResponse = new CachedResponse()
-            {
-                BodyKeyPrefix = FastGuid.NewGuid().IdString,
-                Created = DateTimeOffset.UtcNow,
-                StatusCode = StatusCodes.Status200OK,
-                Headers = headers
-            };
-
-            AssertCachedResponseEqual(cachedResponse, (CachedResponse)CacheEntrySerializer.Deserialize(CacheEntrySerializer.Serialize(cachedResponse)));
-        }
-
-        [Fact]
         public void RoundTrip_CachedResponseWithBody_Succeeds()
         {
             var headers = new HeaderDictionary();
@@ -67,10 +40,9 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             headers["keyB"] = "valueB";
             var cachedResponse = new CachedResponse()
             {
-                BodyKeyPrefix = FastGuid.NewGuid().IdString,
                 Created = DateTimeOffset.UtcNow,
                 StatusCode = StatusCodes.Status200OK,
-                Body = Encoding.ASCII.GetBytes("Hello world"),
+                Body = new MemoryStream(Encoding.ASCII.GetBytes("Hello world")),
                 Headers = headers
             };
 
@@ -178,16 +150,10 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             Assert.Null(CacheEntrySerializer.Deserialize(serializedEntry));
         }
 
-        private static void AssertCachedResponseBodyEqual(CachedResponseBody expected, CachedResponseBody actual)
-        {
-            Assert.True(expected.Body.SequenceEqual(actual.Body));
-        }
-
         private static void AssertCachedResponseEqual(CachedResponse expected, CachedResponse actual)
         {
             Assert.NotNull(actual);
             Assert.NotNull(expected);
-            Assert.Equal(expected.BodyKeyPrefix, actual.BodyKeyPrefix);
             Assert.Equal(expected.Created, actual.Created);
             Assert.Equal(expected.StatusCode, actual.StatusCode);
             Assert.Equal(expected.Headers.Count, actual.Headers.Count);
@@ -201,7 +167,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             }
             else
             {
-                Assert.True(expected.Body.SequenceEqual(actual.Body));
+                Assert.True(expected.Body.ToArray().SequenceEqual(actual.Body.ToArray()));
             }
         }
 

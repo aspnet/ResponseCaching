@@ -130,14 +130,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
 
                     response.Headers[HeaderNames.Age] = context.CachedEntryAge.Value.TotalSeconds.ToString("F0", CultureInfo.InvariantCulture);
 
-                    var body = context.CachedResponse.Body ??
-                        ((CachedResponseBody) await _store.GetAsync(context.CachedResponse.BodyKeyPrefix))?.Body;
-
-                    // If the body is not found, something went wrong.
-                    if (body == null)
-                    {
-                        return false;
-                    }
+                    var body = context.CachedResponse.Body;
 
                     // Copy the cached response body
                     if (body.Length > 0)
@@ -147,7 +140,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
                         {
                             response.ContentLength = body.Length;
                         }
-                        await response.Body.WriteAsync(body, 0, body.Length);
+                        await body.CopyToAsync(response.Body);
                     }
                 }
 
@@ -244,7 +237,6 @@ namespace Microsoft.AspNetCore.ResponseCaching
                 // Store the response on the state
                 context.CachedResponse = new CachedResponse
                 {
-                    BodyKeyPrefix = FastGuid.NewGuid().IdString,
                     Created = context.ResponseDate.Value,
                     StatusCode = context.HttpContext.Response.StatusCode
                 };
@@ -270,24 +262,11 @@ namespace Microsoft.AspNetCore.ResponseCaching
                 context.ResponseCacheStream.BufferingEnabled &&
                 (!contentLength.HasValue || contentLength == context.ResponseCacheStream.BufferedStream.Length))
             {
-                if (context.ResponseCacheStream.BufferedStream.Length >= _options.MinimumSplitBodySize)
-                {
-                    // Store response and response body separately
-                    await _store.SetAsync(context.StorageVaryKey ?? context.BaseKey, context.CachedResponse, context.CachedResponseValidFor);
-
-                    var cachedResponseBody = new CachedResponseBody()
-                    {
-                        Body = context.ResponseCacheStream.BufferedStream.ToArray()
-                    };
-
-                    await _store.SetAsync(context.CachedResponse.BodyKeyPrefix, cachedResponseBody, context.CachedResponseValidFor);
-                }
-                else
-                {
-                    // Store response and response body together
-                    context.CachedResponse.Body = context.ResponseCacheStream.BufferedStream.ToArray();
-                    await _store.SetAsync(context.StorageVaryKey ?? context.BaseKey, context.CachedResponse, context.CachedResponseValidFor);
-                }
+                // Store response and response body together
+                context.CachedResponse.Body = context.ResponseCacheStream.BufferedStream;
+                context.KeyValuePair.Key = context.StorageVaryKey ?? context.BaseKey;
+                context.KeyValuePair.Value = context.CachedResponse;
+                await _store.SetAsync(context.KeyValuePair, context.CachedResponseValidFor);
             }
         }
 
