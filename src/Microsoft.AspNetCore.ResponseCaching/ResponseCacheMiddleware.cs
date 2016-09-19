@@ -130,9 +130,8 @@ namespace Microsoft.AspNetCore.ResponseCaching
 
                     response.Headers[HeaderNames.Age] = context.CachedEntryAge.Value.TotalSeconds.ToString("F0", CultureInfo.InvariantCulture);
 
-                    var body = context.CachedResponse.Body;
-
                     // Copy the cached response body
+                    var body = context.CachedResponse.Body;
                     if (body.Length > 0)
                     {
                         // Add a content-length if required
@@ -140,7 +139,11 @@ namespace Microsoft.AspNetCore.ResponseCaching
                         {
                             response.ContentLength = body.Length;
                         }
-                        await body.CopyToAsync(response.Body);
+
+                        foreach (var shard in body.Shards)
+                        {
+                            await response.Body.WriteAsync(shard, 0, shard.Length);
+                        }
                     }
                 }
 
@@ -260,10 +263,10 @@ namespace Microsoft.AspNetCore.ResponseCaching
             var contentLength = context.TypedResponseHeaders.ContentLength;
             if (context.ShouldCacheResponse &&
                 context.ResponseCacheStream.BufferingEnabled &&
-                (!contentLength.HasValue || contentLength == context.ResponseCacheStream.BufferedStream.Length))
+                (!contentLength.HasValue || contentLength == context.ResponseCacheStream.Length))
             {
                 // Store response and response body together
-                context.CachedResponse.Body = context.ResponseCacheStream.BufferedStream;
+                context.CachedResponse.Body = context.ResponseCacheStream;
                 context.KeyValuePair.Key = context.StorageVaryKey ?? context.BaseKey;
                 context.KeyValuePair.Value = context.CachedResponse;
                 await _store.SetAsync(context.KeyValuePair, context.CachedResponseValidFor);
@@ -289,7 +292,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
         {
             // Shim response stream
             context.OriginalResponseStream = context.HttpContext.Response.Body;
-            context.ResponseCacheStream = new ResponseCacheStream(context.OriginalResponseStream, _options.MaximumCachedBodySize);
+            context.ResponseCacheStream = new ResponseCacheStream(context.OriginalResponseStream, _options.MaximumCachedBodySize, _options.CachedBodyShardSize);
             context.HttpContext.Response.Body = context.ResponseCacheStream;
 
             // Shim IHttpSendFileFeature

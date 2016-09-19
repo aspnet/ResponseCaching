@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using Microsoft.AspNetCore.Http;
 
@@ -34,6 +35,47 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 using (var writer = new BinaryWriter(memory))
                 {
                     Write(writer, entry);
+                    writer.Flush();
+                    return memory.ToArray();
+                }
+            }
+        }
+
+        // Serialization Format
+        // BodyKeyPrefix (string)
+        // ShardSize (int)
+        // Shard (byte[])
+        public static CachedResponseBodyShard DeserializeCachedResponseBodyShard(byte[] serializedEntry)
+        {
+            if (serializedEntry == null)
+            {
+                return null;
+            }
+
+            using (var memory = new MemoryStream(serializedEntry))
+            {
+                using (var reader = new BinaryReader(memory))
+                {
+                    var bodyKeyPrefix = reader.ReadString();
+                    var shardSize = reader.ReadInt32();
+                    var shard = reader.ReadBytes(shardSize);
+
+                    return new CachedResponseBodyShard() { BodyKeyPrefix = bodyKeyPrefix, Shard = shard };
+                }
+            }
+        }
+
+        // See serialization format above
+        public static byte[] SerializeCachedResponseBodyShard(CachedResponseBodyShard shard)
+        {
+            using (var memory = new MemoryStream())
+            {
+                using (var writer = new BinaryWriter(memory))
+                {
+                    writer.Write(shard.BodyKeyPrefix);
+                    writer.Write(shard.Shard.Length);
+                    writer.Write(shard.Shard);
+
                     writer.Flush();
                     return memory.ToArray();
                 }
@@ -80,8 +122,9 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         //   ValueCount (int)
         //   Value(s)
         //     Value (string)
-        // Body length (long)
-        // Body (byte[])
+        // BodyKeyPrefix (string)
+        // Length (long)
+        // BufferShardSize (int)
         private static CachedResponse ReadCachedResponse(BinaryReader reader)
         {
             var created = new DateTimeOffset(reader.ReadInt64(), TimeSpan.Zero);
@@ -107,14 +150,17 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 }
             }
 
-            var bodyLength = reader.ReadInt64();
-            var body = new MemoryStream(reader.ReadBytes((int)bodyLength));
+            var bodyKeyPrefix = reader.ReadString();
+            var length = reader.ReadInt64();
+            var bufferShardSize = reader.ReadInt32();
+            var requriedShards = (int)((length + bufferShardSize - 1) / bufferShardSize);
+            var body = new ResponseCacheStream(new List<byte[]>(requriedShards), length, bufferShardSize);
 
-            return new CachedResponse { Created = created, StatusCode = statusCode, Headers = headers, Body = body };
+            return new CachedResponse { Created = created, StatusCode = statusCode, Headers = headers, BodyKeyPrefix = bodyKeyPrefix, Body = body};
         }
 
         // Serialization Format
-        // Guid (long)
+        // VaryKeyPrefix (string)
         // Headers count
         // Header(s) (comma separated string)
         // QueryKey count
@@ -186,8 +232,9 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 }
             }
 
+            writer.Write(entry.BodyKeyPrefix);
             writer.Write(entry.Body.Length);
-            writer.Write(entry.Body.ToArray());
+            writer.Write(entry.Body.BufferShardSize);
         }
 
         // See serialization format above

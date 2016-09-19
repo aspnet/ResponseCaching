@@ -2,7 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.IO;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Microsoft.AspNetCore.Http;
@@ -38,11 +38,13 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             var headers = new HeaderDictionary();
             headers["keyA"] = "valueA";
             headers["keyB"] = "valueB";
+            var body = Encoding.ASCII.GetBytes("Hello world");
             var cachedResponse = new CachedResponse()
             {
                 Created = DateTimeOffset.UtcNow,
                 StatusCode = StatusCodes.Status200OK,
-                Body = new MemoryStream(Encoding.ASCII.GetBytes("Hello world")),
+                BodyKeyPrefix = FastGuid.NewGuid().IdString,
+                Body = new ResponseCacheStream(new List<byte[]>(new []{ body }), body.Length, body.Length),
                 Headers = headers
             };
 
@@ -161,14 +163,10 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             {
                 Assert.Equal(expectedHeader.Value, actual.Headers[expectedHeader.Key]);
             }
-            if (expected.Body == null)
-            {
-                Assert.Null(actual.Body);
-            }
-            else
-            {
-                Assert.True(expected.Body.ToArray().SequenceEqual(actual.Body.ToArray()));
-            }
+            Assert.Equal(expected.BodyKeyPrefix, actual.BodyKeyPrefix);
+            Assert.Equal(expected.Body.Length, actual.Body.Length);
+            // Comparing capacity here since shards are retrieved and deserialized separately
+            Assert.Equal(expected.Body.Shards.Capacity, actual.Body.Shards.Capacity);
         }
 
         private static void AssertCachedVaryByRuleEqual(CachedVaryByRules expected, CachedVaryByRules actual)

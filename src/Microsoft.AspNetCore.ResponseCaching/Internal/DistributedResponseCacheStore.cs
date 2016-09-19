@@ -29,7 +29,25 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             }
             catch
             {
-                return null;
+                keyValuePair.Value = CacheEntrySerializer.Deserialize(await _cache.GetAsync(keyValuePair.Key));
+
+                var cachedResponse = keyValuePair.Value as CachedResponse;
+                if (cachedResponse != null)
+                {
+                    // TODO: parallelize
+                    for (int i = 0; i < cachedResponse.Body.Shards.Capacity; i++)
+                    {
+                        var cachedResponseBodyShard = CacheEntrySerializer.DeserializeCachedResponseBodyShard(await _cache.GetAsync(cachedResponse.BodyKeyPrefix + i));
+                        if (!string.Equals(cachedResponseBodyShard?.BodyKeyPrefix, cachedResponse.BodyKeyPrefix, StringComparison.Ordinal))
+                        {
+                            // A non-valid shard was retrieved, fail right away
+                            cachedResponse = null;
+                            return;
+                        }
+
+                        cachedResponse.Body.Shards.Add(cachedResponseBodyShard.Shard);
+                    }
+                }
             }
         }
 
@@ -46,6 +64,12 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         {
             try
             {
+                var cachedResponse = keyValuePair.Value as CachedResponse;
+                if (cachedResponse != null)
+                {
+                    cachedResponse.BodyKeyPrefix = FastGuid.NewGuid().IdString;
+                }
+
                 await _cache.SetAsync(
                     key,
                     CacheEntrySerializer.Serialize(entry),
@@ -53,6 +77,41 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                     {
                         AbsoluteExpirationRelativeToNow = validFor
                     });
+
+                if (cachedResponse != null)
+                {
+                    // TODO: parallelize
+                    for (int i = 0; i < cachedResponse.Body.Shards.Count - 1; i++)
+                    {
+                        await _cache.SetAsync(
+                            cachedResponse.BodyKeyPrefix + i,
+                            CacheEntrySerializer.SerializeCachedResponseBodyShard(new CachedResponseBodyShard()
+                            {
+                                BodyKeyPrefix = cachedResponse.BodyKeyPrefix,
+                                Shard = cachedResponse.Body.Shards[i]
+                            }),
+                            new DistributedCacheEntryOptions()
+                            {
+                                AbsoluteExpirationRelativeToNow = validFor
+                            });
+                    }
+
+                    var partialShardLength = (int)(cachedResponse.Body.Length % cachedResponse.Body.BufferShardSize);
+                    var partialShard = new byte[partialShardLength];
+                    Array.Copy(cachedResponse.Body.Shards[cachedResponse.Body.Shards.Count - 1], partialShard, partialShardLength);
+
+                    await _cache.SetAsync(
+                        cachedResponse.BodyKeyPrefix + (cachedResponse.Body.Shards.Count - 1),
+                        CacheEntrySerializer.SerializeCachedResponseBodyShard(new CachedResponseBodyShard()
+                        {
+                            BodyKeyPrefix = cachedResponse.BodyKeyPrefix,
+                            Shard = partialShard
+                        }),
+                        new DistributedCacheEntryOptions()
+                        {
+                            AbsoluteExpirationRelativeToNow = validFor
+                        });
+                }
             }
             catch { }
         }
