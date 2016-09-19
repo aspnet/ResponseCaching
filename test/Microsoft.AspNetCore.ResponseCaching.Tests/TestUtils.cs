@@ -27,7 +27,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             headers.CacheControl = new CacheControlHeaderValue()
             {
                 Public = true,
-                MaxAge = TimeSpan.FromSeconds(100000)
+                MaxAge = TimeSpan.FromSeconds(10)
             };
             headers.Date = DateTimeOffset.UtcNow;
             headers.Headers["X-Value"] = uniqueId;
