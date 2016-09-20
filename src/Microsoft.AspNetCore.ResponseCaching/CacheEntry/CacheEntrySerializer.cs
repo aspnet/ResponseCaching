@@ -42,47 +42,6 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         }
 
         // Serialization Format
-        // BodyKeyPrefix (string)
-        // ShardSize (int)
-        // Shard (byte[])
-        public static CachedResponseBodyShard DeserializeCachedResponseBodyShard(byte[] serializedEntry)
-        {
-            if (serializedEntry == null)
-            {
-                return null;
-            }
-
-            using (var memory = new MemoryStream(serializedEntry))
-            {
-                using (var reader = new BinaryReader(memory))
-                {
-                    var bodyKeyPrefix = reader.ReadString();
-                    var shardSize = reader.ReadInt32();
-                    var shard = reader.ReadBytes(shardSize);
-
-                    return new CachedResponseBodyShard() { BodyKeyPrefix = bodyKeyPrefix, Shard = shard };
-                }
-            }
-        }
-
-        // See serialization format above
-        public static byte[] SerializeCachedResponseBodyShard(CachedResponseBodyShard shard)
-        {
-            using (var memory = new MemoryStream())
-            {
-                using (var writer = new BinaryWriter(memory))
-                {
-                    writer.Write(shard.BodyKeyPrefix);
-                    writer.Write(shard.Shard.Length);
-                    writer.Write(shard.Shard);
-
-                    writer.Flush();
-                    return memory.ToArray();
-                }
-            }
-        }
-
-        // Serialization Format
         // Format version (int)
         // Type (char: 'R' for CachedResponse, 'V' for CachedVaryByRules)
         // Type-dependent data (see CachedResponse and CachedVaryByRules)

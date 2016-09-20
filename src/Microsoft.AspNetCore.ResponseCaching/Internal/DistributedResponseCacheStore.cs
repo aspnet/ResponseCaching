@@ -33,9 +33,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                     // TODO: parallelize
                     for (int i = 0; i < cachedResponse.Body.Shards.Capacity; i++)
                     {
-                        var cachedResponseBodyShard = CacheEntrySerializer.DeserializeCachedResponseBodyShard(
-                            await _cache.GetAsync(cachedResponse.BodyKeyPrefix + i));
-                        cachedResponse.Body.Shards.Add(cachedResponseBodyShard.Shard);
+                        cachedResponse.Body.Shards.Add(await _cache.GetAsync(cachedResponse.BodyKeyPrefix + i));
                     }
                 }
                 return entry;
@@ -80,11 +78,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                     {
                         await _cache.SetAsync(
                             cachedResponse.BodyKeyPrefix + i,
-                            CacheEntrySerializer.SerializeCachedResponseBodyShard(new CachedResponseBodyShard()
-                            {
-                                BodyKeyPrefix = cachedResponse.BodyKeyPrefix,
-                                Shard = cachedResponse.Body.Shards[i]
-                            }),
+                            cachedResponse.Body.Shards[i],
                             new DistributedCacheEntryOptions()
                             {
                                 AbsoluteExpirationRelativeToNow = validFor
@@ -97,11 +91,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
                     await _cache.SetAsync(
                         cachedResponse.BodyKeyPrefix + (cachedResponse.Body.Shards.Count - 1),
-                        CacheEntrySerializer.SerializeCachedResponseBodyShard(new CachedResponseBodyShard()
-                        {
-                            BodyKeyPrefix = cachedResponse.BodyKeyPrefix,
-                            Shard = partialShard
-                        }),
+                        partialShard,
                         new DistributedCacheEntryOptions()
                         {
                             AbsoluteExpirationRelativeToNow = validFor
