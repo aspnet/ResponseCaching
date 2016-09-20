@@ -25,29 +25,24 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         {
             try
             {
-                return CacheEntrySerializer.Deserialize(await _cache.GetAsync(key));
-            }
-            catch
-            {
-                keyValuePair.Value = CacheEntrySerializer.Deserialize(await _cache.GetAsync(keyValuePair.Key));
+                var entry = CacheEntrySerializer.Deserialize(await _cache.GetAsync(key));
 
-                var cachedResponse = keyValuePair.Value as CachedResponse;
+                var cachedResponse = entry as CachedResponse;
                 if (cachedResponse != null)
                 {
                     // TODO: parallelize
                     for (int i = 0; i < cachedResponse.Body.Shards.Capacity; i++)
                     {
-                        var cachedResponseBodyShard = CacheEntrySerializer.DeserializeCachedResponseBodyShard(await _cache.GetAsync(cachedResponse.BodyKeyPrefix + i));
-                        if (!string.Equals(cachedResponseBodyShard?.BodyKeyPrefix, cachedResponse.BodyKeyPrefix, StringComparison.Ordinal))
-                        {
-                            // A non-valid shard was retrieved, fail right away
-                            cachedResponse = null;
-                            return;
-                        }
-
+                        var cachedResponseBodyShard = CacheEntrySerializer.DeserializeCachedResponseBodyShard(
+                            await _cache.GetAsync(cachedResponse.BodyKeyPrefix + i));
                         cachedResponse.Body.Shards.Add(cachedResponseBodyShard.Shard);
                     }
                 }
+                return entry;
+            }
+            catch
+            {
+                return null;
             }
         }
 
@@ -64,7 +59,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         {
             try
             {
-                var cachedResponse = keyValuePair.Value as CachedResponse;
+                var cachedResponse = entry as CachedResponse;
                 if (cachedResponse != null)
                 {
                     cachedResponse.BodyKeyPrefix = FastGuid.NewGuid().IdString;

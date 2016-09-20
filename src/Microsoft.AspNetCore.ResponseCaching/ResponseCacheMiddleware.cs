@@ -266,11 +266,8 @@ namespace Microsoft.AspNetCore.ResponseCaching
                 context.ResponseCacheStream.BufferingEnabled &&
                 (!contentLength.HasValue || contentLength == context.ResponseCacheStream.Length))
             {
-                // Store response and response body together
                 context.CachedResponse.Body = context.ResponseCacheStream;
-                context.KeyValuePair.Key = context.StorageVaryKey ?? context.BaseKey;
-                context.KeyValuePair.Value = context.CachedResponse;
-                await _store.SetAsync(context.KeyValuePair, context.CachedResponseValidFor);
+                await _store.SetAsync(context.StorageVaryKey ?? context.BaseKey, context.CachedResponse, context.CachedResponseValidFor);
             }
         }
 

@@ -91,7 +91,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
                 "BaseKeyVaryKey2",
                 new CachedResponse()
                 {
-                    Body = new MemoryStream(new byte[0])
+                    Body = new ResponseCacheStream(new List<byte[]>(0), 0, 1)
                 },
                 TimeSpan.Zero);
 
