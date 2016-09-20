@@ -328,11 +328,11 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
 
             context.HttpContext.Response.Headers[HeaderNames.Vary] = new StringValues(new[] { "headerA", "HEADERB", "HEADERc" });
             context.HttpContext.AddResponseCacheFeature();
-            context.HttpContext.GetResponseCacheFeature().VaryByParams = new StringValues(new[] { "paramB", "PARAMAA" });
+            context.HttpContext.GetResponseCacheFeature().VaryByQueryKeys = new StringValues(new[] { "paramB", "PARAMAA" });
             var cachedVaryByRules = new CachedVaryByRules()
             {
                 Headers = new StringValues(new[] { "HeaderA", "HeaderB" }),
-                Params = new StringValues(new[] { "ParamA", "ParamB" })
+                QueryKeys = new StringValues(new[] { "ParamA", "ParamB" })
             };
             context.CachedVaryByRules = cachedVaryByRules;
 
@@ -352,12 +352,12 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
 
             context.HttpContext.Response.Headers[HeaderNames.Vary] = new StringValues(new[] { "headerA", "HEADERB" });
             context.HttpContext.AddResponseCacheFeature();
-            context.HttpContext.GetResponseCacheFeature().VaryByParams = new StringValues(new[] { "paramB", "PARAMA" });
+            context.HttpContext.GetResponseCacheFeature().VaryByQueryKeys = new StringValues(new[] { "paramB", "PARAMA" });
             var cachedVaryByRules = new CachedVaryByRules()
             {
                 VaryByKeyPrefix = FastGuid.NewGuid().IdString,
                 Headers = new StringValues(new[] { "HEADERA", "HEADERB" }),
-                Params = new StringValues(new[] { "PARAMA", "PARAMB" })
+                QueryKeys = new StringValues(new[] { "PARAMA", "PARAMB" })
             };
             context.CachedVaryByRules = cachedVaryByRules;
 

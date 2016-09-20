@@ -200,30 +200,30 @@ namespace Microsoft.AspNetCore.ResponseCaching
 
                 // Create the cache entry now
                 var response = context.HttpContext.Response;
-                var varyHeaderValue = new StringValues(response.Headers.GetCommaSeparatedValues(HeaderNames.Vary));
-                var varyParamsValue = context.HttpContext.GetResponseCacheFeature()?.VaryByParams ?? StringValues.Empty;
+                var varyHeaders = new StringValues(response.Headers.GetCommaSeparatedValues(HeaderNames.Vary));
+                var varyQueryKeys = context.HttpContext.GetResponseCacheFeature()?.VaryByQueryKeys ?? StringValues.Empty;
                 context.CachedResponseValidFor = context.ResponseCacheControlHeaderValue.SharedMaxAge ??
                     context.ResponseCacheControlHeaderValue.MaxAge ??
                     (context.ResponseExpires - context.ResponseTime) ??
                     DefaultExpirationTimeSpan;
 
                 // Check if any vary rules exist
-                if (!StringValues.IsNullOrEmpty(varyHeaderValue) || !StringValues.IsNullOrEmpty(varyParamsValue))
+                if (!StringValues.IsNullOrEmpty(varyHeaders) || !StringValues.IsNullOrEmpty(varyQueryKeys))
                 {
                     // Normalize order and casing of vary by rules
-                    var normalizedVaryHeaderValue = GetOrderCasingNormalizedStringValues(varyHeaderValue);
-                    var normalizedVaryParamsValue = GetOrderCasingNormalizedStringValues(varyParamsValue);
+                    var normalizedVaryHeaders = GetOrderCasingNormalizedStringValues(varyHeaders);
+                    var normalizedVaryQueryKeys = GetOrderCasingNormalizedStringValues(varyQueryKeys);
 
                     // Update vary rules if they are different
                     if (context.CachedVaryByRules == null ||
-                        !StringValues.Equals(context.CachedVaryByRules.Params, normalizedVaryParamsValue) ||
-                        !StringValues.Equals(context.CachedVaryByRules.Headers, normalizedVaryHeaderValue))
+                        !StringValues.Equals(context.CachedVaryByRules.QueryKeys, normalizedVaryQueryKeys) ||
+                        !StringValues.Equals(context.CachedVaryByRules.Headers, normalizedVaryHeaders))
                     {
                         context.CachedVaryByRules = new CachedVaryByRules
                         {
                             VaryByKeyPrefix = FastGuid.NewGuid().IdString,
-                            Headers = normalizedVaryHeaderValue,
-                            Params = normalizedVaryParamsValue
+                            Headers = normalizedVaryHeaders,
+                            QueryKeys = normalizedVaryQueryKeys
                         };
                     }
 
