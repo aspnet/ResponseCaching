@@ -108,7 +108,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
             context.CachedResponse = cachedResponse;
             context.CachedResponseHeaders = new ResponseHeaders(cachedResponse.Headers);
             context.ResponseTime = _options.SystemClock.UtcNow;
-            var cachedEntryAge = context.ResponseTime - context.CachedResponse.Created;
+            var cachedEntryAge = context.ResponseTime.Value - context.CachedResponse.Created;
             context.CachedEntryAge = cachedEntryAge > TimeSpan.Zero ? cachedEntryAge : TimeSpan.Zero;
 
             if (_policyProvider.IsCachedEntryFresh(context))
@@ -128,7 +128,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
                         response.Headers.Add(header);
                     }
 
-                    response.Headers[HeaderNames.Age] = context.CachedEntryAge.TotalSeconds.ToString("F0", CultureInfo.InvariantCulture);
+                    response.Headers[HeaderNames.Age] = context.CachedEntryAge.Value.TotalSeconds.ToString("F0", CultureInfo.InvariantCulture);
 
                     var body = context.CachedResponse.Body ??
                         ((CachedResponseBody) await _store.GetAsync(context.CachedResponse.BodyKeyPrefix))?.Body;
@@ -204,7 +204,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
                 var varyQueryKeys = context.HttpContext.GetResponseCacheFeature()?.VaryByQueryKeys ?? StringValues.Empty;
                 context.CachedResponseValidFor = context.ResponseCacheControlHeaderValue.SharedMaxAge ??
                     context.ResponseCacheControlHeaderValue.MaxAge ??
-                    (context.ResponseExpires - context.ResponseTime) ??
+                    (context.ResponseExpires - context.ResponseTime.Value) ??
                     DefaultExpirationTimeSpan;
 
                 // Check if any vary rules exist
@@ -236,7 +236,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
                 // Ensure date header is set
                 if (!context.ResponseDate.HasValue)
                 {
-                    context.ResponseDate = context.ResponseTime;
+                    context.ResponseDate = context.ResponseTime.Value;
                     // Setting the date on the raw response headers.
                     context.TypedResponseHeaders.Date = context.ResponseDate;
                 }

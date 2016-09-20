@@ -32,9 +32,9 @@ namespace Microsoft.AspNetCore.ResponseCaching
 
         public HttpContext HttpContext { get; }
 
-        public DateTimeOffset ResponseTime { get; internal set; }
+        public DateTimeOffset? ResponseTime { get; internal set; }
 
-        public TimeSpan CachedEntryAge { get; internal set; }
+        public TimeSpan? CachedEntryAge { get; internal set; }
 
         public CachedVaryByRules CachedVaryByRules { get; internal set; }
 
