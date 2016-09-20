@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace Microsoft.AspNetCore.ResponseCaching
 {
-    public class CachedResponse
+    public class CachedResponse : IResponseCacheEntry
     {
         public DateTimeOffset Created { get; set; }
 

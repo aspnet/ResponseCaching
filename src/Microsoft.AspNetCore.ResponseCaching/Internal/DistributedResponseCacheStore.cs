@@ -21,7 +21,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             _cache = cache;
         }
 
-        public async Task<object> GetAsync(string key)
+        public async Task<IResponseCacheEntry> GetAsync(string key)
         {
             try
             {
@@ -53,7 +53,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             catch { }
         }
 
-        public async Task SetAsync(string key, object entry, TimeSpan validFor)
+        public async Task SetAsync(string key, IResponseCacheEntry entry, TimeSpan validFor)
         {
             try
             {

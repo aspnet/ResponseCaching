@@ -20,10 +20,14 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             Assert.Throws<ArgumentNullException>(() => CacheEntrySerializer.Serialize(null));
         }
 
+        private class UnknownResponseCacheEntry : IResponseCacheEntry
+        {
+        }
+
         [Fact]
         public void Serialize_UnknownObject_Throws()
         {
-            Assert.Throws<NotSupportedException>(() => CacheEntrySerializer.Serialize(new object()));
+            Assert.Throws<NotSupportedException>(() => CacheEntrySerializer.Serialize(new UnknownResponseCacheEntry()));
         }
 
         [Fact]

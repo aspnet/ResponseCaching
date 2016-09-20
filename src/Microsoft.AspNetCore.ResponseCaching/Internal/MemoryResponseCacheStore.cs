@@ -22,9 +22,9 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             _cache = cache;
         }
 
-        public Task<object> GetAsync(string key)
+        public Task<IResponseCacheEntry> GetAsync(string key)
         {
-            return Task.FromResult(_cache.Get(key));
+            return Task.FromResult(_cache.Get(key) as IResponseCacheEntry);
         }
 
         public Task RemoveAsync(string key)
@@ -33,7 +33,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             return TaskCache.CompletedTask;
         }
 
-        public Task SetAsync(string key, object entry, TimeSpan validFor)
+        public Task SetAsync(string key, IResponseCacheEntry entry, TimeSpan validFor)
         {
             _cache.Set(
                 key,

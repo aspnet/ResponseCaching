@@ -12,7 +12,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
     {
         private const int FormatVersion = 1;
 
-        public static object Deserialize(byte[] serializedEntry)
+        public static IResponseCacheEntry Deserialize(byte[] serializedEntry)
         {
             if (serializedEntry == null)
             {
@@ -28,7 +28,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             }
         }
 
-        public static byte[] Serialize(object entry)
+        public static byte[] Serialize(IResponseCacheEntry entry)
         {
             using (var memory = new MemoryStream())
             {
@@ -45,7 +45,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         // Format version (int)
         // Type (char: 'R' for CachedResponse, 'V' for CachedVaryByRules)
         // Type-dependent data (see CachedResponse and CachedVaryByRules)
-        public static object Read(BinaryReader reader)
+        public static IResponseCacheEntry Read(BinaryReader reader)
         {
             if (reader == null)
             {
@@ -145,7 +145,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         }
 
         // See serialization format above
-        public static void Write(BinaryWriter writer, object entry)
+        public static void Write(BinaryWriter writer, IResponseCacheEntry entry)
         {
             if (writer == null)
             {
@@ -162,16 +162,16 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             if (entry is CachedResponse)
             {
                 writer.Write('R');
-                WriteCachedResponse(writer, entry as CachedResponse);
+                WriteCachedResponse(writer, (CachedResponse)entry);
             }
             else if (entry is CachedVaryByRules)
             {
                 writer.Write('V');
-                WriteCachedVaryByRules(writer, entry as CachedVaryByRules);
+                WriteCachedVaryByRules(writer, (CachedVaryByRules)entry);
             }
             else
             {
-                throw new NotSupportedException($"Unrecognized entry format for {nameof(entry)}.");
+                throw new NotSupportedException($"Unrecognized entry type for {nameof(entry)}.");
             }
         }
 
