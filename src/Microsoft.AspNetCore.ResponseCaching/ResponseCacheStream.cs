@@ -14,29 +14,27 @@ namespace Microsoft.AspNetCore.ResponseCaching
         private readonly Stream _innerStream;
         private readonly long _maxBufferSize;
         private readonly int _bufferShardSize;
+        private readonly MemoryStream _bufferStream;
         private readonly List<byte[]> _shards;
         private long _bufferedBytes;
+        private bool _shardsFinalized;
 
         public ResponseCacheStream(List<byte[]> shards, long bufferedBytes, int bufferShardSize)
-            : this(shards, bufferedBytes, null, 0, bufferShardSize)
         {
+            _shards = shards;
+            _shardsFinalized = true;
+            _bufferShardSize = bufferShardSize;
+            _bufferedBytes = bufferedBytes;
         }
 
         public ResponseCacheStream(Stream innerStream, long maxBufferSize, int bufferShardSize)
-            : this(new List<byte[]>(), 0, innerStream, maxBufferSize, bufferShardSize)
-        {
-        }
-
-        private ResponseCacheStream(List<byte[]> shards, long bufferedBytes, Stream innerStream, long maxBufferSize, int bufferShardSize)
         {
             _innerStream = innerStream;
             _maxBufferSize = maxBufferSize;
             _bufferShardSize = bufferShardSize;
-            _shards = shards;
-            _bufferedBytes = bufferedBytes;
+            _shards = new List<byte[]>();
+            _bufferStream = new MemoryStream();
         }
-
-        public List<byte[]> Shards => _shards;
 
         public int BufferShardSize => _bufferShardSize;
 
@@ -57,6 +55,19 @@ namespace Microsoft.AspNetCore.ResponseCaching
              {
                 DisableBuffering();
                 _innerStream.Position = value;
+            }
+        }
+
+        public List<byte[]> FinalizedShards
+        {
+            get
+            {
+                if (!_shardsFinalized && _bufferStream.Length > 0)
+                {
+                    // Add the last shard
+                    _shards.Add(_bufferStream.ToArray());
+                }
+                return _shards;
             }
         }
 
@@ -195,27 +206,20 @@ namespace Microsoft.AspNetCore.ResponseCaching
             }
             else
             {
-                // Allocate a shard if none exists
-                if (_shards.Count == 0)
+                var bytesRemainingInShard = _bufferShardSize - (int)(_bufferedBytes % _bufferShardSize);
+                while (count > 0)
                 {
-                    _shards.Add(new byte[_bufferShardSize]);
-                }
-
-                var bytesRemaining = count;
-                var bytesWritten = 0;
-                var bytesRemainingInShard = _shards.Count * _bufferShardSize - _bufferedBytes;
-                while (bytesRemaining > 0)
-                {
-                    var bytesToWrite = (int)Math.Min(bytesRemaining, bytesRemainingInShard);
-                    Buffer.BlockCopy(buffer, offset + bytesWritten, _shards[_shards.Count - 1], (int)(_bufferedBytes % _bufferShardSize), bytesToWrite);
-                    bytesRemaining -= bytesToWrite;
+                    var bytesToWrite = Math.Min(count, bytesRemainingInShard);
+                    _bufferStream.Write(buffer, offset, bytesToWrite);
+                    count -= bytesToWrite;
                     bytesRemainingInShard -= bytesToWrite;
-                    bytesWritten += bytesToWrite;
+                    offset += bytesToWrite;
                     _bufferedBytes += bytesToWrite;
 
-                    if (bytesRemaining > 0 && bytesRemainingInShard == 0)
+                    if (count > 0 && bytesRemainingInShard == 0)
                     {
-                        _shards.Add(new byte[_bufferShardSize]);
+                        _shards.Add(_bufferStream.ToArray());
+                        _bufferStream.SetLength(0);
                         bytesRemainingInShard = _bufferShardSize;
                     }
                 }

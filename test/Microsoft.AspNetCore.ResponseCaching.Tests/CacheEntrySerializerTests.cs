@@ -3,7 +3,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.ResponseCaching.Internal;
@@ -171,8 +170,8 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             }
             Assert.Equal(expected.BodyKeyPrefix, actual.BodyKeyPrefix);
             Assert.Equal(expected.Body.Length, actual.Body.Length);
-            // Comparing capacity here since shards are retrieved and deserialized separately
-            Assert.Equal(expected.Body.Shards.Capacity, actual.Body.Shards.Capacity);
+            // Comparing capacity here since shards are retrieved separately
+            Assert.Equal(expected.Body.FinalizedShards.Capacity, actual.Body.FinalizedShards.Capacity);
         }
 
         private static void AssertCachedVaryByRuleEqual(CachedVaryByRules expected, CachedVaryByRules actual)

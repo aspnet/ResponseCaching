@@ -31,9 +31,10 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 if (cachedResponse != null)
                 {
                     // TODO: parallelize
-                    for (int i = 0; i < cachedResponse.Body.Shards.Capacity; i++)
+                    var shards = cachedResponse.Body.FinalizedShards;
+                    for (int i = 0; i < shards.Capacity; i++)
                     {
-                        cachedResponse.Body.Shards.Add(await _cache.GetAsync(cachedResponse.BodyKeyPrefix + i));
+                        shards.Add(await _cache.GetAsync(cachedResponse.BodyKeyPrefix + i));
                     }
                 }
                 return entry;
@@ -74,28 +75,17 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 if (cachedResponse != null)
                 {
                     // TODO: parallelize
-                    for (int i = 0; i < cachedResponse.Body.Shards.Count - 1; i++)
+                    var shards = cachedResponse.Body.FinalizedShards;
+                    for (int i = 0; i < shards.Count; i++)
                     {
                         await _cache.SetAsync(
                             cachedResponse.BodyKeyPrefix + i,
-                            cachedResponse.Body.Shards[i],
+                            shards[i],
                             new DistributedCacheEntryOptions()
                             {
                                 AbsoluteExpirationRelativeToNow = validFor
                             });
                     }
-
-                    var partialShardLength = (int)(cachedResponse.Body.Length % cachedResponse.Body.BufferShardSize);
-                    var partialShard = new byte[partialShardLength];
-                    Array.Copy(cachedResponse.Body.Shards[cachedResponse.Body.Shards.Count - 1], partialShard, partialShardLength);
-
-                    await _cache.SetAsync(
-                        cachedResponse.BodyKeyPrefix + (cachedResponse.Body.Shards.Count - 1),
-                        partialShard,
-                        new DistributedCacheEntryOptions()
-                        {
-                            AbsoluteExpirationRelativeToNow = validFor
-                        });
                 }
             }
             catch { }

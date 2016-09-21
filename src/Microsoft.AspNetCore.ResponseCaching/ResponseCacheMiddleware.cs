@@ -140,11 +140,11 @@ namespace Microsoft.AspNetCore.ResponseCaching
                             response.ContentLength = body.Length;
                         }
 
-                        for (int i = 0; i < body.Shards.Count - 1; i++)
+                        var shards = body.FinalizedShards;
+                        foreach (var shard in shards)
                         {
-                            await response.Body.WriteAsync(body.Shards[i], 0, body.Shards[i].Length);
+                            await response.Body.WriteAsync(shard, 0, shard.Length);
                         }
-                        await response.Body.WriteAsync(body.Shards[body.Shards.Count - 1], 0, (int)(body.Length - ((body.Shards.Count - 1) * body.BufferShardSize)));
                     }
                 }
 
