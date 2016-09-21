@@ -44,7 +44,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             return new ResponseCacheKeyProvider(new DefaultObjectPoolProvider(), Options.Create(options));
         }
 
-        internal static IWebHostBuilder CreateBuilderWithResponseCache(
+        internal static IEnumerable<IWebHostBuilder> CreateBuildersWithResponseCache(
             Action<IApplicationBuilder> configureDelegate = null,
             ResponseCacheOptions options = null,
             RequestDelegate requestDelegate = null)
@@ -62,7 +62,21 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
                 requestDelegate = TestRequestDelegate;
             }
 
-            return new WebHostBuilder()
+            // Test with MemoryResponseCacheStore
+            yield return new WebHostBuilder()
+                .ConfigureServices(services =>
+                {
+                    services.AddMemoryResponseCache();
+                })
+                .Configure(app =>
+                {
+                    configureDelegate(app);
+                    app.UseResponseCache(options);
+                    app.Run(requestDelegate);
+                });
+
+            // Test with DistributedResponseCacheStore
+            yield return new WebHostBuilder()
                 .ConfigureServices(services =>
                 {
                     services.AddDistributedResponseCache();
