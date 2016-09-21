@@ -60,12 +60,13 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         {
             var headers = new HeaderDictionary();
             headers["keyA"] = new StringValues(new[] { "ValueA", "ValueB" });
+            var body = Encoding.ASCII.GetBytes("Hello world");
             var cachedResponse = new CachedResponse()
             {
                 BodyKeyPrefix = FastGuid.NewGuid().IdString,
                 Created = DateTimeOffset.UtcNow,
                 StatusCode = StatusCodes.Status200OK,
-                Body = Encoding.ASCII.GetBytes("Hello world"),
+                Body = new ResponseCacheStream(new List<byte[]>(new[] { body }), body.Length, body.Length),
                 Headers = headers
             };
 
@@ -77,12 +78,13 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         {
             var headers = new HeaderDictionary();
             headers["keyA"] = StringValues.Empty;
+            var body = Encoding.ASCII.GetBytes("Hello world");
             var cachedResponse = new CachedResponse()
             {
                 BodyKeyPrefix = FastGuid.NewGuid().IdString,
                 Created = DateTimeOffset.UtcNow,
                 StatusCode = StatusCodes.Status200OK,
-                Body = Encoding.ASCII.GetBytes("Hello world"),
+                Body = new ResponseCacheStream(new List<byte[]>(new[] { body }), body.Length, body.Length),
                 Headers = headers
             };
 
