@@ -8,7 +8,7 @@ using Microsoft.AspNetCore.Http;
 
 namespace Microsoft.AspNetCore.ResponseCaching.Internal
 {
-    internal static class CacheEntrySerializer
+    internal static class ResponseCacheEntrySerializer
     {
         private const int FormatVersion = 1;
 

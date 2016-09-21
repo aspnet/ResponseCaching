@@ -16,7 +16,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         [Fact]
         public void Serialize_NullObject_Throws()
         {
-            Assert.Throws<ArgumentNullException>(() => CacheEntrySerializer.Serialize(null));
+            Assert.Throws<ArgumentNullException>(() => ResponseCacheEntrySerializer.Serialize(null));
         }
 
         private class UnknownResponseCacheEntry : IResponseCacheEntry
@@ -26,13 +26,13 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         [Fact]
         public void Serialize_UnknownObject_Throws()
         {
-            Assert.Throws<NotSupportedException>(() => CacheEntrySerializer.Serialize(new UnknownResponseCacheEntry()));
+            Assert.Throws<NotSupportedException>(() => ResponseCacheEntrySerializer.Serialize(new UnknownResponseCacheEntry()));
         }
 
         [Fact]
         public void Deserialize_NullObject_ReturnsNull()
         {
-            Assert.Null(CacheEntrySerializer.Deserialize(null));
+            Assert.Null(ResponseCacheEntrySerializer.Deserialize(null));
         }
 
         [Fact]
@@ -51,7 +51,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
                 Headers = headers
             };
 
-            AssertCachedResponseEqual(cachedResponse, (CachedResponse)CacheEntrySerializer.Deserialize(CacheEntrySerializer.Serialize(cachedResponse)));
+            AssertCachedResponseEqual(cachedResponse, (CachedResponse)ResponseCacheEntrySerializer.Deserialize(ResponseCacheEntrySerializer.Serialize(cachedResponse)));
         }
 
         [Fact]
@@ -69,7 +69,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
                 Headers = headers
             };
 
-            AssertCachedResponseEqual(cachedResponse, (CachedResponse)CacheEntrySerializer.Deserialize(CacheEntrySerializer.Serialize(cachedResponse)));
+            AssertCachedResponseEqual(cachedResponse, (CachedResponse)ResponseCacheEntrySerializer.Deserialize(ResponseCacheEntrySerializer.Serialize(cachedResponse)));
         }
 
         [Fact]
@@ -87,7 +87,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
                 Headers = headers
             };
 
-            AssertCachedResponseEqual(cachedResponse, (CachedResponse)CacheEntrySerializer.Deserialize(CacheEntrySerializer.Serialize(cachedResponse)));
+            AssertCachedResponseEqual(cachedResponse, (CachedResponse)ResponseCacheEntrySerializer.Deserialize(ResponseCacheEntrySerializer.Serialize(cachedResponse)));
         }
 
         [Fact]
@@ -98,7 +98,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
                 VaryByKeyPrefix = FastGuid.NewGuid().IdString
             };
 
-            AssertCachedVaryByRuleEqual(cachedVaryByRule, (CachedVaryByRules)CacheEntrySerializer.Deserialize(CacheEntrySerializer.Serialize(cachedVaryByRule)));
+            AssertCachedVaryByRuleEqual(cachedVaryByRule, (CachedVaryByRules)ResponseCacheEntrySerializer.Deserialize(ResponseCacheEntrySerializer.Serialize(cachedVaryByRule)));
         }
 
         [Fact]
@@ -111,7 +111,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
                 Headers = headers
             };
 
-            AssertCachedVaryByRuleEqual(cachedVaryByRule, (CachedVaryByRules)CacheEntrySerializer.Deserialize(CacheEntrySerializer.Serialize(cachedVaryByRule)));
+            AssertCachedVaryByRuleEqual(cachedVaryByRule, (CachedVaryByRules)ResponseCacheEntrySerializer.Deserialize(ResponseCacheEntrySerializer.Serialize(cachedVaryByRule)));
         }
 
         [Fact]
@@ -124,7 +124,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
                 QueryKeys = queryKeys
             };
 
-            AssertCachedVaryByRuleEqual(cachedVaryByRule, (CachedVaryByRules)CacheEntrySerializer.Deserialize(CacheEntrySerializer.Serialize(cachedVaryByRule)));
+            AssertCachedVaryByRuleEqual(cachedVaryByRule, (CachedVaryByRules)ResponseCacheEntrySerializer.Deserialize(ResponseCacheEntrySerializer.Serialize(cachedVaryByRule)));
         }
 
         [Fact]
@@ -139,7 +139,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
                 QueryKeys = queryKeys
             };
 
-            AssertCachedVaryByRuleEqual(cachedVaryByRule, (CachedVaryByRules)CacheEntrySerializer.Deserialize(CacheEntrySerializer.Serialize(cachedVaryByRule)));
+            AssertCachedVaryByRuleEqual(cachedVaryByRule, (CachedVaryByRules)ResponseCacheEntrySerializer.Deserialize(ResponseCacheEntrySerializer.Serialize(cachedVaryByRule)));
         }
 
         [Fact]
@@ -151,10 +151,10 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
                 VaryByKeyPrefix = FastGuid.NewGuid().IdString,
                 Headers = headers
             };
-            var serializedEntry = CacheEntrySerializer.Serialize(cachedVaryByRule);
+            var serializedEntry = ResponseCacheEntrySerializer.Serialize(cachedVaryByRule);
             Array.Reverse(serializedEntry);
 
-            Assert.Null(CacheEntrySerializer.Deserialize(serializedEntry));
+            Assert.Null(ResponseCacheEntrySerializer.Deserialize(serializedEntry));
         }
 
         private static void AssertCachedResponseEqual(CachedResponse expected, CachedResponse actual)
