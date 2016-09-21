@@ -11,6 +11,9 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
     {
         private const int FormatVersion = 1;
 
+        [ThreadStatic]
+        private static IHeaderDictionary Headers;
+
         public static object Deserialize(byte[] serializedEntry)
         {
             if (serializedEntry == null)
@@ -99,16 +102,22 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         //   Body (byte[])
         private static CachedResponse ReadCachedResponse(BinaryReader reader)
         {
+            if (Headers == null)
+            {
+                 Headers = new HeaderDictionary();
+            }
+            Headers.Clear();
+
             var bodyKeyPrefix = reader.ReadString();
             var created = new DateTimeOffset(reader.ReadInt64(), TimeSpan.Zero);
             var statusCode = reader.ReadInt32();
             var headerCount = reader.ReadInt32();
-            var headers = new HeaderDictionary();
+
             for (var index = 0; index < headerCount; index++)
             {
                 var key = reader.ReadString();
                 var value = reader.ReadString();
-                headers[key] = value;
+                Headers[key] = value;
             }
 
             var containsBody = reader.ReadBoolean();
@@ -120,7 +129,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 body = reader.ReadBytes(bodyLength);
             }
 
-            return new CachedResponse { BodyKeyPrefix = bodyKeyPrefix, Created = created, StatusCode = statusCode, Headers = headers, Body = body };
+            return new CachedResponse { BodyKeyPrefix = bodyKeyPrefix, Created = created, StatusCode = statusCode, Headers = Headers, Body = body };
         }
 
         // Serialization Format
