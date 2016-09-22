@@ -42,16 +42,21 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             headers["keyA"] = "valueA";
             headers["keyB"] = "valueB";
             var body = Encoding.ASCII.GetBytes("Hello world");
-            var cachedResponse = new CachedResponse()
+            var serializableCachedResponse = new SerializableCachedResponse()
             {
-                Created = DateTimeOffset.UtcNow,
-                StatusCode = StatusCodes.Status200OK,
-                BodyKeyPrefix = FastGuid.NewGuid().IdString,
-                Body = new ReadOnlyMemoryStream(new List<byte[]>(new[] { body }), body.Length),
-                Headers = headers
+                CachedResponse = new CachedResponse()
+                {
+                    Created = DateTimeOffset.UtcNow,
+                    StatusCode = StatusCodes.Status200OK,
+                    Body = new ReadOnlyMemoryStream(new List<byte[]>(new[] { body }), body.Length),
+                    Headers = headers
+                },
+                ShardKeyPrefix = FastGuid.NewGuid().IdString,
+                BodyLength = body.Length,
+                ShardCount = 2
             };
 
-            AssertCachedResponseEqual(cachedResponse, (CachedResponse)ResponseCacheEntrySerializer.Deserialize(ResponseCacheEntrySerializer.Serialize(cachedResponse)));
+            AssertSerializableCachedResponseEqual(serializableCachedResponse, (SerializableCachedResponse)ResponseCacheEntrySerializer.Deserialize(ResponseCacheEntrySerializer.Serialize(serializableCachedResponse)));
         }
 
         [Fact]
@@ -60,16 +65,21 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             var headers = new HeaderDictionary();
             headers["keyA"] = new StringValues(new[] { "ValueA", "ValueB" });
             var body = Encoding.ASCII.GetBytes("Hello world");
-            var cachedResponse = new CachedResponse()
+            var cachedResponse = new SerializableCachedResponse()
             {
-                BodyKeyPrefix = FastGuid.NewGuid().IdString,
-                Created = DateTimeOffset.UtcNow,
-                StatusCode = StatusCodes.Status200OK,
-                Body = new ReadOnlyMemoryStream(new List<byte[]>(new[] { body }), body.Length),
-                Headers = headers
+                CachedResponse = new CachedResponse()
+                {
+                    Created = DateTimeOffset.UtcNow,
+                    StatusCode = StatusCodes.Status200OK,
+                    Body = new ReadOnlyMemoryStream(new List<byte[]>(new[] { body }), body.Length),
+                    Headers = headers
+                },
+                ShardKeyPrefix = FastGuid.NewGuid().IdString,
+                BodyLength = body.Length,
+                ShardCount = 2
             };
 
-            AssertCachedResponseEqual(cachedResponse, (CachedResponse)ResponseCacheEntrySerializer.Deserialize(ResponseCacheEntrySerializer.Serialize(cachedResponse)));
+            AssertSerializableCachedResponseEqual(cachedResponse, (SerializableCachedResponse)ResponseCacheEntrySerializer.Deserialize(ResponseCacheEntrySerializer.Serialize(cachedResponse)));
         }
 
         [Fact]
@@ -78,16 +88,21 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             var headers = new HeaderDictionary();
             headers["keyA"] = StringValues.Empty;
             var body = Encoding.ASCII.GetBytes("Hello world");
-            var cachedResponse = new CachedResponse()
+            var cachedResponse = new SerializableCachedResponse()
             {
-                BodyKeyPrefix = FastGuid.NewGuid().IdString,
-                Created = DateTimeOffset.UtcNow,
-                StatusCode = StatusCodes.Status200OK,
-                Body = new ReadOnlyMemoryStream(new List<byte[]>(new[] { body }), body.Length),
-                Headers = headers
+                CachedResponse = new CachedResponse()
+                {
+                    Created = DateTimeOffset.UtcNow,
+                    StatusCode = StatusCodes.Status200OK,
+                    Body = new ReadOnlyMemoryStream(new List<byte[]>(new[] { body }), body.Length),
+                    Headers = headers
+                },
+                ShardKeyPrefix = FastGuid.NewGuid().IdString,
+                BodyLength = body.Length,
+                ShardCount = 2
             };
 
-            AssertCachedResponseEqual(cachedResponse, (CachedResponse)ResponseCacheEntrySerializer.Deserialize(ResponseCacheEntrySerializer.Serialize(cachedResponse)));
+            AssertSerializableCachedResponseEqual(cachedResponse, (SerializableCachedResponse)ResponseCacheEntrySerializer.Deserialize(ResponseCacheEntrySerializer.Serialize(cachedResponse)));
         }
 
         [Fact]
@@ -157,19 +172,20 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             Assert.Null(ResponseCacheEntrySerializer.Deserialize(serializedEntry));
         }
 
-        private static void AssertCachedResponseEqual(CachedResponse expected, CachedResponse actual)
+        private static void AssertSerializableCachedResponseEqual(SerializableCachedResponse expected, SerializableCachedResponse actual)
         {
             Assert.NotNull(actual);
             Assert.NotNull(expected);
-            Assert.Equal(expected.Created, actual.Created);
-            Assert.Equal(expected.StatusCode, actual.StatusCode);
-            Assert.Equal(expected.Headers.Count, actual.Headers.Count);
-            foreach (var expectedHeader in expected.Headers)
+            Assert.Equal(expected.CachedResponse.Created, actual.CachedResponse.Created);
+            Assert.Equal(expected.CachedResponse.StatusCode, actual.CachedResponse.StatusCode);
+            Assert.Equal(expected.CachedResponse.Headers.Count, actual.CachedResponse.Headers.Count);
+            foreach (var expectedHeader in expected.CachedResponse.Headers)
             {
-                Assert.Equal(expectedHeader.Value, actual.Headers[expectedHeader.Key]);
+                Assert.Equal(expectedHeader.Value, actual.CachedResponse.Headers[expectedHeader.Key]);
             }
-            Assert.Equal(expected.BodyKeyPrefix, actual.BodyKeyPrefix);
-            Assert.Equal(expected.Body.Length, actual.Body.Length);
+            Assert.Equal(expected.ShardKeyPrefix, actual.ShardKeyPrefix);
+            Assert.Equal(expected.ShardCount, actual.ShardCount);
+            Assert.Equal(expected.BodyLength, actual.BodyLength);
         }
 
         private static void AssertCachedVaryByRuleEqual(CachedVaryByRules expected, CachedVaryByRules actual)

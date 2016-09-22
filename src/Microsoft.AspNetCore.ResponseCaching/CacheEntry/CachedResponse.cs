@@ -16,7 +16,5 @@ namespace Microsoft.AspNetCore.ResponseCaching
         public IHeaderDictionary Headers { get; set; } = new HeaderDictionary();
 
         public Stream Body { get; set; }
-
-        public string BodyKeyPrefix { get; set; }
     }
 }

@@ -1,6 +1,7 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
+using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,39 +12,22 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
     // TODO: naming and fill in the rest of the stream implementation
     internal class CopyOnlyDistributedCacheStream : Stream
     {
+        private readonly IDistributedCache _cache;
         private readonly string _shardKeyPrefix;
-        private readonly long _length;
-        private long _shardCount;
-        private IDistributedCache _cache;
+        private readonly long _bodyLength;
+        private readonly long _shardCount;
 
-        public CopyOnlyDistributedCacheStream(string shardKeyPrefix, long length)
+        public CopyOnlyDistributedCacheStream(IDistributedCache cache, string shardKeyPrefix, long shardCount, long bodyLength)
         {
+            if (cache == null)
+            {
+                throw new ArgumentNullException(nameof(cache));
+            }
+
+            _cache = cache;
             _shardKeyPrefix = shardKeyPrefix;
-            _length = length;
-        }
-
-        internal IDistributedCache Cache
-        {
-            private get
-            {
-                return _cache;
-            }
-            set
-            {
-                _cache = value;
-            }
-        }
-
-        internal long ShardCount
-        {
-            private get
-            {
-                return _shardCount;
-            }
-            set
-            {
-                _shardCount = value;
-            }
+            _shardCount = shardCount;
+            _bodyLength = bodyLength;
         }
 
         public override bool CanRead => false;
@@ -52,7 +36,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
         public override bool CanWrite => false;
 
-        public override long Length => _length;
+        public override long Length => _bodyLength;
 
         public override long Position
         {
@@ -74,10 +58,9 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         {
             // TODO: Check validity of parameters
 
-            for (int i = 0; i < ShardCount; i++)
+            for (int i = 0; i < _shardCount; i++)
             {
-                // TODO: respect bufferSize
-                var shard = await Cache.GetAsync(_shardKeyPrefix + i);
+                var shard = await _cache.GetAsync(_shardKeyPrefix + i);
                 await destination.WriteAsync(shard, 0, shard.Length);
             }
         }

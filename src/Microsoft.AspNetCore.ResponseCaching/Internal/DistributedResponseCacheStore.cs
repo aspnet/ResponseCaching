@@ -35,15 +35,22 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             {
                 var entry = ResponseCacheEntrySerializer.Deserialize(await _cache.GetAsync(key));
 
-                var cachedResponse = entry as CachedResponse;
-                if (cachedResponse != null)
+                if (entry is SerializableCachedResponse)
                 {
-                    var shardCount = (cachedResponse.Body.Length + _options.CachedBodyShardSize - 1) / _options.CachedBodyShardSize;
-                    var copyOnlyDistributedCacheStream = (CopyOnlyDistributedCacheStream)cachedResponse.Body;
-                    copyOnlyDistributedCacheStream.Cache = _cache;
-                    copyOnlyDistributedCacheStream.ShardCount = shardCount;
+                    var serializableCachedResponse = (SerializableCachedResponse)entry;
+                    var cachedResponse = serializableCachedResponse.CachedResponse;
+                    cachedResponse.Body = new CopyOnlyDistributedCacheStream(
+                        _cache,
+                        serializableCachedResponse.ShardKeyPrefix,
+                        serializableCachedResponse.ShardCount,
+                        serializableCachedResponse.BodyLength);
+
+                    return cachedResponse;
                 }
-                return entry;
+                else
+                {
+                    return entry;
+                }
             }
             catch
             {
@@ -64,25 +71,26 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         {
             try
             {
-                var cachedResponse = entry as CachedResponse;
-                if (cachedResponse != null)
+                if (entry is CachedResponse)
                 {
-                    cachedResponse.BodyKeyPrefix = FastGuid.NewGuid().IdString;
-                }
-
-                await _cache.SetAsync(
-                    key,
-                    ResponseCacheEntrySerializer.Serialize(entry),
-                    new DistributedCacheEntryOptions()
+                    var cachedResponse = (CachedResponse)entry;
+                    var serializableCachedResponse = new SerializableCachedResponse()
                     {
-                        AbsoluteExpirationRelativeToNow = validFor
-                    });
+                        CachedResponse = cachedResponse,
+                        ShardKeyPrefix = FastGuid.NewGuid().IdString,
+                        ShardCount = (cachedResponse.Body.Length + _options.CachedBodyShardSize - 1) / _options.CachedBodyShardSize,
+                        BodyLength = cachedResponse.Body.Length
+                    };
 
-                if (cachedResponse != null)
-                {
-                    var shardCount = (cachedResponse.Body.Length + _options.CachedBodyShardSize - 1) / _options.CachedBodyShardSize;
+                    await _cache.SetAsync(
+                        key,
+                        ResponseCacheEntrySerializer.Serialize(serializableCachedResponse),
+                        new DistributedCacheEntryOptions()
+                        {
+                            AbsoluteExpirationRelativeToNow = validFor
+                        });
 
-                    for (int i = 0; i < shardCount; i++)
+                    for (int i = 0; i < serializableCachedResponse.ShardCount; i++)
                     {
                         // TODO: doesn't need a new shard every time?
                         var shard = new byte[_options.CachedBodyShardSize];
@@ -97,13 +105,23 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                         }
 
                         await _cache.SetAsync(
-                            cachedResponse.BodyKeyPrefix + i,
+                            serializableCachedResponse.ShardKeyPrefix + i,
                             shard,
                             new DistributedCacheEntryOptions()
                             {
                                 AbsoluteExpirationRelativeToNow = validFor
                             });
                     }
+                }
+                else
+                {
+                    await _cache.SetAsync(
+                       key,
+                       ResponseCacheEntrySerializer.Serialize(entry),
+                       new DistributedCacheEntryOptions()
+                       {
+                           AbsoluteExpirationRelativeToNow = validFor
+                       });
                 }
             }
             catch { }
