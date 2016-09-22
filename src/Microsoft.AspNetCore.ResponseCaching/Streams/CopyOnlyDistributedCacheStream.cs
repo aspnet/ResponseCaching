@@ -1,32 +1,49 @@
 ﻿// Copyright (c) .NET Foundation. All rights reserved.
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
-using System;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Distributed;
 
-namespace Microsoft.AspNetCore.ResponseCaching
+namespace Microsoft.AspNetCore.ResponseCaching.Internal
 {
-    public class CopyOnlyDistributedCacheStream : Stream
+    // TODO: naming and fill in the rest of the stream implementation?
+    internal class CopyOnlyDistributedCacheStream : Stream
     {
-        private readonly IDistributedCache _cache;
         private readonly string _shardKeyPrefix;
         private readonly long _length;
-        private readonly long _shardCount;
+        private long _shardCount;
+        private IDistributedCache _cache;
 
-        public CopyOnlyDistributedCacheStream(IDistributedCache cache, string shardKeyPrefix, long length, long shardCount)
+        public CopyOnlyDistributedCacheStream(string shardKeyPrefix, long length)
         {
-            if (cache == null)
-            {
-                throw new ArgumentNullException(nameof(cache));
-            }
-
-            _cache = cache;
             _shardKeyPrefix = shardKeyPrefix;
             _length = length;
-            _shardCount = shardCount;
+        }
+
+        internal IDistributedCache Cache
+        {
+            private get
+            {
+                return _cache;
+            }
+            set
+            {
+                _cache = value;
+            }
+        }
+
+        internal long ShardCount
+        {
+            private get
+            {
+                return _shardCount;
+            }
+            set
+            {
+                _shardCount = value;
+            }
         }
 
         public override bool CanRead => false;
@@ -55,9 +72,11 @@ namespace Microsoft.AspNetCore.ResponseCaching
 
         public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
-            for (int i = 0; i < _shardCount; i++)
+            // TODO: Check validity of parameters
+
+            for (int i = 0; i < ShardCount; i++)
             {
-                var shard = await _cache.GetAsync(_shardKeyPrefix + i);
+                var shard = await Cache.GetAsync(_shardKeyPrefix + i);
                 await destination.WriteAsync(shard, 0, shard.Length);
             }
         }

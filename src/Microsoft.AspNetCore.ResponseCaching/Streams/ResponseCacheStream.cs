@@ -7,9 +7,9 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Microsoft.AspNetCore.ResponseCaching
+namespace Microsoft.AspNetCore.ResponseCaching.Internal
 {
-    public class ResponseCacheStream : Stream
+    internal class ResponseCacheStream : Stream
     {
         private readonly Stream _innerStream;
         private readonly long _maxBufferSize;

@@ -10,6 +10,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 {
     internal static class ResponseCacheEntrySerializer
     {
+        private static readonly List<byte[]> EmptyList = new List<byte[]>();
         private const int FormatVersion = 1;
 
         public static IResponseCacheEntry Deserialize(byte[] serializedEntry)
@@ -83,7 +84,6 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         //     Value (string)
         // BodyKeyPrefix (string)
         // Length (long)
-        // BufferShardSize (int)
         private static CachedResponse ReadCachedResponse(BinaryReader reader)
         {
             var created = new DateTimeOffset(reader.ReadInt64(), TimeSpan.Zero);
@@ -111,7 +111,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
             var bodyKeyPrefix = reader.ReadString();
             var length = reader.ReadInt64();
-            var body = new ReadOnlyMemoryStream(new List<byte[]>(), length); // only the length property is needed
+            var body = new CopyOnlyDistributedCacheStream(bodyKeyPrefix, length);
 
             return new CachedResponse { Created = created, StatusCode = statusCode, Headers = headers, BodyKeyPrefix = bodyKeyPrefix, Body = body};
         }

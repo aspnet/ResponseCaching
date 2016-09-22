@@ -38,9 +38,10 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 var cachedResponse = entry as CachedResponse;
                 if (cachedResponse != null)
                 {
-                    // TODO: parallelize
                     var shardCount = (cachedResponse.Body.Length + _options.CachedBodyShardSize - 1) / _options.CachedBodyShardSize;
-                    cachedResponse.Body = new CopyOnlyDistributedCacheStream(_cache, cachedResponse.BodyKeyPrefix, cachedResponse.Body.Length, shardCount);
+                    var copyOnlyDistributedCacheStream = (CopyOnlyDistributedCacheStream)cachedResponse.Body;
+                    copyOnlyDistributedCacheStream.Cache = _cache;
+                    copyOnlyDistributedCacheStream.ShardCount = shardCount;
                 }
                 return entry;
             }
@@ -79,11 +80,11 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
                 if (cachedResponse != null)
                 {
-                    // TODO: parallelize
                     var shardCount = (cachedResponse.Body.Length + _options.CachedBodyShardSize - 1) / _options.CachedBodyShardSize;
 
                     for (int i = 0; i < shardCount; i++)
                     {
+                        // TODO: doesn't need a new shard every time?
                         var shard = new byte[_options.CachedBodyShardSize];
                         var bytesRead = cachedResponse.Body.Read(shard, 0, _options.CachedBodyShardSize);
 
