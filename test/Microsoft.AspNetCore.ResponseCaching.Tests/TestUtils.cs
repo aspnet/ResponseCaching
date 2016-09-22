@@ -75,18 +75,18 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
                     app.Run(requestDelegate);
                 });
 
-            //// Test with DistributedResponseCacheStore
-            //yield return new WebHostBuilder()
-            //    .ConfigureServices(services =>
-            //    {
-            //        services.AddDistributedResponseCache();
-            //    })
-            //    .Configure(app =>
-            //    {
-            //        configureDelegate(app);
-            //        app.UseResponseCache(options);
-            //        app.Run(requestDelegate);
-            //    });
+            // Test with DistributedResponseCacheStore
+            yield return new WebHostBuilder()
+                .ConfigureServices(services =>
+                {
+                    services.AddDistributedResponseCache();
+                })
+                .Configure(app =>
+                {
+                    configureDelegate(app);
+                    app.UseResponseCache(options);
+                    app.Run(requestDelegate);
+                });
         }
 
         internal static ResponseCacheMiddleware CreateTestMiddleware(

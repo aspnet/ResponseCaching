@@ -59,7 +59,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
                     // Add the last shard
                     _shards.Add(_bufferStream.ToArray());
                 }
-                _bufferedStream = new CopyOnlyMemoryStream(_shards, _bufferedBytes);
+                _bufferedStream = new ReadOnlyMemoryStream(_shards, _bufferedBytes);
             }
             return _bufferedStream;
         }

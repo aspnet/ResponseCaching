@@ -32,6 +32,10 @@
   },
   "frameworks": {
     "net451": {},
-    "netstandard1.3": {}
+    "netstandard1.3": {
+      "dependencies": {
+        "System.Console": "4.0.0"
+      }
+    }
   }
 }

@@ -2,27 +2,31 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace Microsoft.AspNetCore.ResponseCaching
 {
-    public class CopyOnlyMemoryStream : Stream
+    public class CopyOnlyDistributedCacheStream : Stream
     {
-        private readonly List<byte[]> _shards;
+        private readonly IDistributedCache _cache;
+        private readonly string _shardKeyPrefix;
         private readonly long _length;
+        private readonly long _shardCount;
 
-        public CopyOnlyMemoryStream(List<byte[]> shards, long length)
+        public CopyOnlyDistributedCacheStream(IDistributedCache cache, string shardKeyPrefix, long length, long shardCount)
         {
-            if (shards == null)
+            if (cache == null)
             {
-                throw new ArgumentNullException(nameof(shards));
+                throw new ArgumentNullException(nameof(cache));
             }
 
-            _shards = shards;
+            _cache = cache;
+            _shardKeyPrefix = shardKeyPrefix;
             _length = length;
+            _shardCount = shardCount;
         }
 
         public override bool CanRead => false;
@@ -51,15 +55,10 @@ namespace Microsoft.AspNetCore.ResponseCaching
 
         public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
-            if (destination == null)
+            for (int i = 0; i < _shardCount; i++)
             {
-                throw new ArgumentNullException(nameof(destination));
-            }
-
-            foreach (var shard in _shards)
-            {
-                // No buffereing here, so ignore bufferSize
-                await destination.WriteAsync(shard, 0, shard.Length, cancellationToken);
+                var shard = await _cache.GetAsync(_shardKeyPrefix + i);
+                await destination.WriteAsync(shard, 0, shard.Length);
             }
         }
     }
