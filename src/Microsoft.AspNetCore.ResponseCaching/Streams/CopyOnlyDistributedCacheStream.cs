@@ -8,7 +8,7 @@ using Microsoft.Extensions.Caching.Distributed;
 
 namespace Microsoft.AspNetCore.ResponseCaching.Internal
 {
-    // TODO: naming and fill in the rest of the stream implementation?
+    // TODO: naming and fill in the rest of the stream implementation
     internal class CopyOnlyDistributedCacheStream : Stream
     {
         private readonly string _shardKeyPrefix;
@@ -76,6 +76,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
             for (int i = 0; i < ShardCount; i++)
             {
+                // TODO: respect bufferSize
                 var shard = await Cache.GetAsync(_shardKeyPrefix + i);
                 await destination.WriteAsync(shard, 0, shard.Length);
             }

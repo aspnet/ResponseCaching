@@ -67,6 +67,14 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         public void DisableBuffering()
         {
             BufferingEnabled = false;
+
+            // Clean up the shards
+            _shards.Clear();
+
+            // Clean up the memory stream
+            _bufferStream.SetLength(0);
+            _bufferStream.Capacity = 0;
+            _bufferStream.Dispose();
         }
 
         public override void SetLength(long value)

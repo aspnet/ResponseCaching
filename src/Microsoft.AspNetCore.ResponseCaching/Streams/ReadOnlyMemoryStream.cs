@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.AspNetCore.ResponseCaching.Internal
 {
-    // TODO: naming and fill in the rest of the stream implementation?
+    // TODO: naming and fill in the rest of the stream implementation
     internal class ReadOnlyMemoryStream : Stream
     {
         private readonly List<byte[]> _shards;
