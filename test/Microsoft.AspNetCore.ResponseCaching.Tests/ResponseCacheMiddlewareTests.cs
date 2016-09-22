@@ -52,7 +52,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
                 "BaseKey",
                 new CachedResponse()
                 {
-                    Body = new ResponseCacheStream(new List<byte[]>(0), 0, 1)
+                    Body = new CopyOnlyMemoryStream(new List<byte[]>(0), 0)
                 },
                 TimeSpan.Zero);
 
@@ -91,7 +91,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
                 "BaseKeyVaryKey2",
                 new CachedResponse()
                 {
-                    Body = new ResponseCacheStream(new List<byte[]>(0), 0, 1)
+                    Body = new CopyOnlyMemoryStream(new List<byte[]>(0), 0)
                 },
                 TimeSpan.Zero);
 

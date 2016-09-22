@@ -140,11 +140,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
                             response.ContentLength = body.Length;
                         }
 
-                        var shards = body.FinalizedShards;
-                        foreach (var shard in shards)
-                        {
-                            await response.Body.WriteAsync(shard, 0, shard.Length);
-                        }
+                        await body.CopyToAsync(response.Body);
                     }
                 }
 
@@ -266,7 +262,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
                 context.ResponseCacheStream.BufferingEnabled &&
                 (!contentLength.HasValue || contentLength == context.ResponseCacheStream.Length))
             {
-                context.CachedResponse.Body = context.ResponseCacheStream;
+                context.CachedResponse.Body = context.ResponseCacheStream.GetBufferedStream();
                 await _store.SetAsync(context.StorageVaryKey ?? context.BaseKey, context.CachedResponse, context.CachedResponseValidFor);
             }
         }

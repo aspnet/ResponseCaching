@@ -113,9 +113,9 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             var length = reader.ReadInt64();
             var bufferShardSize = reader.ReadInt32();
             var requriedShards = (int)((length + bufferShardSize - 1) / bufferShardSize);
-            var body = new ResponseCacheStream(new List<byte[]>(requriedShards), length, bufferShardSize);
+            //var body = new ResponseCacheStream(new List<byte[]>(requriedShards), length, bufferShardSize);
 
-            return new CachedResponse { Created = created, StatusCode = statusCode, Headers = headers, BodyKeyPrefix = bodyKeyPrefix, Body = body};
+            return new CachedResponse { Created = created, StatusCode = statusCode, Headers = headers, BodyKeyPrefix = bodyKeyPrefix, /*Body = body*/};
         }
 
         // Serialization Format
@@ -193,7 +193,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
             writer.Write(entry.BodyKeyPrefix);
             writer.Write(entry.Body.Length);
-            writer.Write(entry.Body.BufferShardSize);
+            //writer.Write(entry.Body.BufferShardSize);
         }
 
         // See serialization format above

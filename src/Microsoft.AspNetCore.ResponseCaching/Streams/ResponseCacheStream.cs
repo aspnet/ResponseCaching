@@ -16,16 +16,8 @@ namespace Microsoft.AspNetCore.ResponseCaching
         private readonly int _bufferShardSize;
         private readonly MemoryStream _bufferStream;
         private readonly List<byte[]> _shards;
+        private Stream _bufferedStream;
         private long _bufferedBytes;
-        private bool _shardsFinalized;
-
-        public ResponseCacheStream(List<byte[]> shards, long bufferedBytes, int bufferShardSize)
-        {
-            _shards = shards;
-            _shardsFinalized = true;
-            _bufferShardSize = bufferShardSize;
-            _bufferedBytes = bufferedBytes;
-        }
 
         public ResponseCacheStream(Stream innerStream, long maxBufferSize, int bufferShardSize)
         {
@@ -58,17 +50,18 @@ namespace Microsoft.AspNetCore.ResponseCaching
             }
         }
 
-        public List<byte[]> FinalizedShards
+        public Stream GetBufferedStream()
         {
-            get
+            if (_bufferedStream == null)
             {
-                if (!_shardsFinalized && _bufferStream.Length > 0)
+                if (_bufferStream.Length > 0)
                 {
                     // Add the last shard
                     _shards.Add(_bufferStream.ToArray());
                 }
-                return _shards;
+                _bufferedStream = new CopyOnlyMemoryStream(_shards, _bufferedBytes);
             }
+            return _bufferedStream;
         }
 
         public void DisableBuffering()

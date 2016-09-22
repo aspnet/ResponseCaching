@@ -27,16 +27,16 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             {
                 var entry = ResponseCacheEntrySerializer.Deserialize(await _cache.GetAsync(key));
 
-                var cachedResponse = entry as CachedResponse;
-                if (cachedResponse != null)
-                {
-                    // TODO: parallelize
-                    var shards = cachedResponse.Body.FinalizedShards;
-                    for (int i = 0; i < shards.Capacity; i++)
-                    {
-                        shards.Add(await _cache.GetAsync(cachedResponse.BodyKeyPrefix + i));
-                    }
-                }
+                //var cachedResponse = entry as CachedResponse;
+                //if (cachedResponse != null)
+                //{
+                //    // TODO: parallelize
+                //    var shards = cachedResponse.Body.FinalizedShards;
+                //    for (int i = 0; i < shards.Capacity; i++)
+                //    {
+                //        shards.Add(await _cache.GetAsync(cachedResponse.BodyKeyPrefix + i));
+                //    }
+                //}
                 return entry;
             }
             catch
@@ -75,17 +75,17 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 if (cachedResponse != null)
                 {
                     // TODO: parallelize
-                    var shards = cachedResponse.Body.FinalizedShards;
-                    for (int i = 0; i < shards.Count; i++)
-                    {
-                        await _cache.SetAsync(
-                            cachedResponse.BodyKeyPrefix + i,
-                            shards[i],
-                            new DistributedCacheEntryOptions()
-                            {
-                                AbsoluteExpirationRelativeToNow = validFor
-                            });
-                    }
+                    //var shards = cachedResponse.Body.FinalizedShards;
+                    //for (int i = 0; i < shards.Count; i++)
+                    //{
+                    //    await _cache.SetAsync(
+                    //        cachedResponse.BodyKeyPrefix + i,
+                    //        shards[i],
+                    //        new DistributedCacheEntryOptions()
+                    //        {
+                    //            AbsoluteExpirationRelativeToNow = validFor
+                    //        });
+                    //}
                 }
             }
             catch { }

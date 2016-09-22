@@ -47,7 +47,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
                 Created = DateTimeOffset.UtcNow,
                 StatusCode = StatusCodes.Status200OK,
                 BodyKeyPrefix = FastGuid.NewGuid().IdString,
-                Body = new ResponseCacheStream(new List<byte[]>(new []{ body }), body.Length, body.Length),
+                Body = new CopyOnlyMemoryStream(new List<byte[]>(new[] { body }), body.Length),
                 Headers = headers
             };
 
@@ -65,7 +65,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
                 BodyKeyPrefix = FastGuid.NewGuid().IdString,
                 Created = DateTimeOffset.UtcNow,
                 StatusCode = StatusCodes.Status200OK,
-                Body = new ResponseCacheStream(new List<byte[]>(new[] { body }), body.Length, body.Length),
+                Body = new CopyOnlyMemoryStream(new List<byte[]>(new[] { body }), body.Length),
                 Headers = headers
             };
 
@@ -83,7 +83,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
                 BodyKeyPrefix = FastGuid.NewGuid().IdString,
                 Created = DateTimeOffset.UtcNow,
                 StatusCode = StatusCodes.Status200OK,
-                Body = new ResponseCacheStream(new List<byte[]>(new[] { body }), body.Length, body.Length),
+                Body = new CopyOnlyMemoryStream(new List<byte[]>(new[] { body }), body.Length),
                 Headers = headers
             };
 
@@ -170,8 +170,6 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             }
             Assert.Equal(expected.BodyKeyPrefix, actual.BodyKeyPrefix);
             Assert.Equal(expected.Body.Length, actual.Body.Length);
-            // Comparing capacity here since shards are retrieved separately
-            Assert.Equal(expected.Body.FinalizedShards.Capacity, actual.Body.FinalizedShards.Capacity);
         }
 
         private static void AssertCachedVaryByRuleEqual(CachedVaryByRules expected, CachedVaryByRules actual)
