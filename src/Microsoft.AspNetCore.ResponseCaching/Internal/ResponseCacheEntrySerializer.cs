@@ -43,8 +43,8 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
         // Serialization Format
         // Format version (int)
-        // Type (char: 'R' for SerializableCachedResponse, 'V' for CachedVaryByRules)
-        // Type-dependent data (see SerializableCachedResponse and CachedVaryByRules)
+        // Type (char: 'R' for CachedResponse, 'V' for CachedVaryByRules)
+        // Type-dependent data (see CachedResponse and CachedVaryByRules)
         private static IResponseCacheEntry Read(BinaryReader reader)
         {
             if (reader == null)
@@ -61,14 +61,14 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
             if (type == 'R')
             {
-                return ReadSerializableCachedResponse(reader);
+                return ReadCachedResponse(reader);
             }
             else if (type == 'V')
             {
                 return ReadCachedVaryByRules(reader);
             }
 
-            // Unable to read as SerializableCachedResponse or CachedVaryByRules
+            // Unable to read as CachedResponse or CachedVaryByRules
             return null;
         }
 
@@ -81,10 +81,9 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         //   ValueCount (int)
         //   Value(s)
         //     Value (string)
-        // ShardKeyPrefix (string)
-        // ShardCount (long)
-        // BodyLength (long)
-        private static SerializableCachedResponse ReadSerializableCachedResponse(BinaryReader reader)
+        // BodyLength (int)
+        // Body (byte[])
+        private static CachedResponse ReadCachedResponse(BinaryReader reader)
         {
             var created = new DateTimeOffset(reader.ReadInt64(), TimeSpan.Zero);
             var statusCode = reader.ReadInt32();
@@ -109,21 +108,16 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 }
             }
 
-            var shardKeyPrefix = reader.ReadString();
-            var shardCount = reader.ReadInt64();
-            var bodyLength = reader.ReadInt64();
+            var bodyLength = reader.ReadInt32();
+            var bodyBytes = reader.ReadBytes(bodyLength);
+            var body = new List<byte[]>(new[] { bodyBytes });
 
-            return new SerializableCachedResponse
+            return new CachedResponse
             {
-                CachedResponse = new CachedResponse
-                {
-                    Created = created,
-                    StatusCode = statusCode,
-                    Headers = headers
-                },
-                ShardKeyPrefix = shardKeyPrefix,
-                ShardCount = shardCount,
-                BodyLength = bodyLength
+                Created = created,
+                StatusCode = statusCode,
+                Headers = headers,
+                Body = new BufferedOutput(body, bodyLength, bodyLength)
             };
         }
 
@@ -168,10 +162,10 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
             writer.Write(FormatVersion);
 
-            if (entry is SerializableCachedResponse)
+            if (entry is CachedResponse)
             {
                 writer.Write('R');
-                WriteCachedResponse(writer, (SerializableCachedResponse)entry);
+                WriteCachedResponse(writer, (CachedResponse)entry);
             }
             else if (entry is CachedVaryByRules)
             {
@@ -185,12 +179,12 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         }
 
         // See serialization format above
-        private static void WriteCachedResponse(BinaryWriter writer, SerializableCachedResponse entry)
+        private static void WriteCachedResponse(BinaryWriter writer, CachedResponse entry)
         {
-            writer.Write(entry.CachedResponse.Created.UtcTicks);
-            writer.Write(entry.CachedResponse.StatusCode);
-            writer.Write(entry.CachedResponse.Headers.Count);
-            foreach (var header in entry.CachedResponse.Headers)
+            writer.Write(entry.Created.UtcTicks);
+            writer.Write(entry.StatusCode);
+            writer.Write(entry.Headers.Count);
+            foreach (var header in entry.Headers)
             {
                 writer.Write(header.Key);
                 writer.Write(header.Value.Count);
@@ -200,9 +194,11 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 }
             }
 
-            writer.Write(entry.ShardKeyPrefix);
-            writer.Write(entry.ShardCount);
-            writer.Write(entry.BodyLength);
+            var bodyLength = (int)entry.Body.Length;
+            var bodyBytes = new byte[bodyLength];
+            entry.Body.Read(bodyBytes, 0, bodyLength);
+            writer.Write(bodyLength);
+            writer.Write(bodyBytes);
         }
 
         // See serialization format above

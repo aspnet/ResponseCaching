@@ -79,7 +79,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             yield return new WebHostBuilder()
                 .ConfigureServices(services =>
                 {
-                    services.AddDistributedResponseCacheStore(storeOptions => storeOptions.DistributedCacheBodyShardSize = 5);
+                    services.AddDistributedResponseCacheStore();
                 })
                 .Configure(app =>
                 {

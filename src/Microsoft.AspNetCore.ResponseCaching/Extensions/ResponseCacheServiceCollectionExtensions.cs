@@ -38,14 +38,6 @@ namespace Microsoft.Extensions.DependencyInjection
             return services;
         }
 
-        public static IServiceCollection AddDistributedResponseCacheStore(this IServiceCollection services, Action<DistributedResponseCacheStoreOptions> configureOptions)
-        {
-            services.AddDistributedResponseCacheStore();
-            services.Configure(configureOptions);
-
-            return services;
-        }
-
         private static IServiceCollection AddResponseCacheServices(this IServiceCollection services)
         {
             services.TryAdd(ServiceDescriptor.Singleton<IResponseCacheKeyProvider, ResponseCacheKeyProvider>());
