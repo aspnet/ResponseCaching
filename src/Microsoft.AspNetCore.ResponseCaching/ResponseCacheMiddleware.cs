@@ -262,7 +262,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
                 context.ResponseCacheStream.BufferingEnabled &&
                 (!contentLength.HasValue || contentLength == context.ResponseCacheStream.Length))
             {
-                context.CachedResponse.Body = context.ResponseCacheStream.GetBufferedStream();
+                context.CachedResponse.Body = context.ResponseCacheStream.GetBufferedOutput();
                 await _store.SetAsync(context.StorageVaryKey ?? context.BaseKey, context.CachedResponse, context.CachedResponseValidFor);
             }
         }
@@ -357,7 +357,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
                 var originalArray = stringValues.ToArray();
                 var newArray = new string[originalArray.Length];
 
-                for (int i = 0; i < originalArray.Length; i++)
+                for (var i = 0; i < originalArray.Length; i++)
                 {
                     newArray[i] = originalArray[i].ToUpperInvariant();
                 }

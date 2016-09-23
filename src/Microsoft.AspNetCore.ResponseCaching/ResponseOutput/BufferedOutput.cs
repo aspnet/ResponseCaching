@@ -9,15 +9,14 @@ using System.Threading.Tasks;
 
 namespace Microsoft.AspNetCore.ResponseCaching.Internal
 {
-    // TODO: naming and fill in the rest of the stream implementation
-    internal class ReadOnlyMemoryStream : Stream
+    internal class BufferedOutput : Stream
     {
         private readonly List<byte[]> _shards;
         private readonly long _length;
         private int _shardPosition;
         private int _shardOffset;
 
-        public ReadOnlyMemoryStream(List<byte[]> shards, long length)
+        internal BufferedOutput(List<byte[]> shards, long length)
         {
             if (shards == null)
             {
@@ -44,6 +43,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
         public override void Flush() { }
 
+        // Note: Requires soft copies of cached entries on retrival from cache for concurrent stateful reads.
         public override int Read(byte[] buffer, int offset, int count)
         {
             var bytesRead = 0;
@@ -74,20 +74,11 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             return Task.FromResult(Read(buffer, offset, count));
         }
 
-        public override long Seek(long offset, SeekOrigin origin)
-        {
-            throw new NotSupportedException("The stream does not support seeking.");
-        }
+        public override long Seek(long offset, SeekOrigin origin) { throw new NotSupportedException("The stream does not support seeking."); }
 
-        public override void SetLength(long value)
-        {
-            throw new NotSupportedException("The stream does not support seeking or writing.");
-        }
+        public override void SetLength(long value) { throw new NotSupportedException("The stream does not support writing."); }
 
-        public override void Write(byte[] buffer, int offset, int count)
-        {
-            throw new NotSupportedException("The stream does not support writing.");
-        }
+        public override void Write(byte[] buffer, int offset, int count) { throw new NotSupportedException("The stream does not support writing."); }
 
         public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
@@ -95,10 +86,13 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             {
                 throw new ArgumentNullException(nameof(destination));
             }
+            if (!destination.CanWrite)
+            {
+                throw new NotSupportedException("The destination stream does not support writing.");
+            }
 
             foreach (var shard in _shards)
             {
-                // No buffereing here, so ignore bufferSize
                 await destination.WriteAsync(shard, 0, shard.Length, cancellationToken);
             }
         }

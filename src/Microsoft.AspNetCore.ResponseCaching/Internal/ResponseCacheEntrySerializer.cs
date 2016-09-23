@@ -10,10 +10,9 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 {
     internal static class ResponseCacheEntrySerializer
     {
-        private static readonly List<byte[]> EmptyList = new List<byte[]>();
         private const int FormatVersion = 1;
 
-        public static IResponseCacheEntry Deserialize(byte[] serializedEntry)
+        internal static IResponseCacheEntry Deserialize(byte[] serializedEntry)
         {
             if (serializedEntry == null)
             {
@@ -29,7 +28,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             }
         }
 
-        public static byte[] Serialize(IResponseCacheEntry entry)
+        internal static byte[] Serialize(IResponseCacheEntry entry)
         {
             using (var memory = new MemoryStream())
             {
@@ -44,9 +43,9 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
         // Serialization Format
         // Format version (int)
-        // Type (char: 'R' for CachedResponse, 'V' for CachedVaryByRules)
-        // Type-dependent data (see CachedResponse and CachedVaryByRules)
-        public static IResponseCacheEntry Read(BinaryReader reader)
+        // Type (char: 'R' for SerializableCachedResponse, 'V' for CachedVaryByRules)
+        // Type-dependent data (see SerializableCachedResponse and CachedVaryByRules)
+        private static IResponseCacheEntry Read(BinaryReader reader)
         {
             if (reader == null)
             {
@@ -155,7 +154,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         }
 
         // See serialization format above
-        public static void Write(BinaryWriter writer, IResponseCacheEntry entry)
+        private static void Write(BinaryWriter writer, IResponseCacheEntry entry)
         {
             if (writer == null)
             {

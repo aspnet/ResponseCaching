@@ -37,15 +37,14 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
                 if (entry is SerializableCachedResponse)
                 {
-                    var serializableCachedResponse = (SerializableCachedResponse)entry;
-                    var cachedResponse = serializableCachedResponse.CachedResponse;
-                    cachedResponse.Body = new CopyOnlyDistributedCacheStream(
+                    var serializableCachedResponse = (SerializableCachedResponse) entry;
+                    serializableCachedResponse.CachedResponse.Body = new DistributedCacheOutput(
                         _cache,
                         serializableCachedResponse.ShardKeyPrefix,
                         serializableCachedResponse.ShardCount,
                         serializableCachedResponse.BodyLength);
 
-                    return cachedResponse;
+                    return serializableCachedResponse.CachedResponse;
                 }
                 else
                 {
@@ -73,7 +72,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             {
                 if (entry is CachedResponse)
                 {
-                    var cachedResponse = (CachedResponse)entry;
+                    var cachedResponse = (CachedResponse) entry;
                     var serializableCachedResponse = new SerializableCachedResponse()
                     {
                         CachedResponse = cachedResponse,
@@ -90,7 +89,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                             AbsoluteExpirationRelativeToNow = validFor
                         });
 
-                    for (int i = 0; i < serializableCachedResponse.ShardCount; i++)
+                    for (var i = 0; i < serializableCachedResponse.ShardCount; i++)
                     {
                         // TODO: doesn't need a new shard every time?
                         var shard = new byte[_options.CachedBodyShardSize];
