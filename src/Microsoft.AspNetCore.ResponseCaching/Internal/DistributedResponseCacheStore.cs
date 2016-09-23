@@ -5,16 +5,15 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Options;
-using Microsoft.AspNetCore.Builder;
 
 namespace Microsoft.AspNetCore.ResponseCaching.Internal
 {
     public class DistributedResponseCacheStore : IResponseCacheStore
     {
         private readonly IDistributedCache _cache;
-        private readonly ResponseCacheOptions _options;
+        private readonly DistributedResponseCacheStoreOptions _options;
 
-        public DistributedResponseCacheStore(IDistributedCache cache, IOptions<ResponseCacheOptions> options)
+        public DistributedResponseCacheStore(IDistributedCache cache, IOptions<DistributedResponseCacheStoreOptions> options)
         {
             if (cache == null)
             {
@@ -77,7 +76,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                     {
                         CachedResponse = cachedResponse,
                         ShardKeyPrefix = FastGuid.NewGuid().IdString,
-                        ShardCount = (cachedResponse.Body.Length + _options.CachedBodyShardSize - 1) / _options.CachedBodyShardSize,
+                        ShardCount = (cachedResponse.Body.Length + _options.DistributedCacheBodyShardSize - 1) / _options.DistributedCacheBodyShardSize,
                         BodyLength = cachedResponse.Body.Length
                     };
 
@@ -92,11 +91,11 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                     for (var i = 0; i < serializableCachedResponse.ShardCount; i++)
                     {
                         // TODO: doesn't need a new shard every time?
-                        var shard = new byte[_options.CachedBodyShardSize];
-                        var bytesRead = cachedResponse.Body.Read(shard, 0, _options.CachedBodyShardSize);
+                        var shard = new byte[_options.DistributedCacheBodyShardSize];
+                        var bytesRead = cachedResponse.Body.Read(shard, 0, _options.DistributedCacheBodyShardSize);
 
                         // The last shard may not be full
-                        if (bytesRead != _options.CachedBodyShardSize)
+                        if (bytesRead != _options.DistributedCacheBodyShardSize)
                         {
                             var partialShard = new byte[bytesRead];
                             Array.Copy(shard, partialShard, bytesRead);

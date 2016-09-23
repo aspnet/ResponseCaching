@@ -141,7 +141,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
                         }
 
                         await body.CopyToAsync(response.Body);
-                        if (body is BufferedOutput) body.Position = 0; // Temp: need to clone the stream
+                        if (body is BufferedOutput) body.Position = 0; // Temp: need to clone the stream, this is not thread safe
                     }
                 }
 
@@ -287,7 +287,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
         {
             // Shim response stream
             context.OriginalResponseStream = context.HttpContext.Response.Body;
-            context.ResponseCacheStream = new ResponseCacheStream(context.OriginalResponseStream, _options.MaximumCachedBodySize, _options.CachedBodyShardSize);
+            context.ResponseCacheStream = new ResponseCacheStream(context.OriginalResponseStream, _options.MaximumCachedBodySize, _options.BodyBufferShardSize);
             context.HttpContext.Response.Body = context.ResponseCacheStream;
 
             // Shim IHttpSendFileFeature
