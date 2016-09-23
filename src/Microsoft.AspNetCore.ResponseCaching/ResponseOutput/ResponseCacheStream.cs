@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -12,16 +13,22 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
     {
         private readonly Stream _innerStream;
         private readonly long _maxBufferSize;
+        private readonly int _shardSize;
+        private readonly MemoryStream _bufferStream;
+        private readonly List<byte[]> _shards;
+        private Stream _bufferedOutput;
+        private long _bufferedOutputLength;
 
-        public ResponseCacheStream(Stream innerStream, long maxBufferSize)
+        internal ResponseCacheStream(Stream innerStream, long maxBufferSize, int shardSize)
         {
             _innerStream = innerStream;
             _maxBufferSize = maxBufferSize;
+            _shardSize = shardSize;
+            _shards = new List<byte[]>();
+            _bufferStream = new MemoryStream();
         }
 
-        public MemoryStream BufferedStream { get; } = new MemoryStream();
-
-        public bool BufferingEnabled { get; set; } = true;
+        internal bool BufferingEnabled { get; private set; } = true;
 
         public override bool CanRead => _innerStream.CanRead;
 
@@ -29,20 +36,43 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
         public override bool CanWrite => _innerStream.CanWrite;
 
-        public override long Length => _innerStream.Length;
+        public override long Length => _bufferedOutputLength;
 
         public override long Position
         {
             get { return _innerStream.Position; }
-            set { _innerStream.Position = value; }
+            set
+            {
+                DisableBuffering();
+                _innerStream.Position = value;
+            }
         }
 
-        public void DisableBuffering()
+        internal Stream GetBufferedOutput()
+        {
+            if (_bufferedOutput == null)
+            {
+                if (_bufferStream.Length > 0)
+                {
+                    // Add the last shard
+                    _shards.Add(_bufferStream.ToArray());
+                }
+                _bufferedOutput = new BufferedOutput(_shards, _shardSize, _bufferedOutputLength);
+            }
+            return _bufferedOutput;
+        }
+
+        internal void DisableBuffering()
         {
             BufferingEnabled = false;
-            BufferedStream.SetLength(0);
-            BufferedStream.Capacity = 0;
-            BufferedStream.Dispose();
+
+            // Clean up the shards
+            _shards.Clear();
+
+            // Clean up the memory stream
+            _bufferStream.SetLength(0);
+            _bufferStream.Capacity = 0;
+            _bufferStream.Dispose();
         }
 
         public override void SetLength(long value)
@@ -81,14 +111,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
             if (BufferingEnabled)
             {
-                if (BufferedStream.Length + count > _maxBufferSize)
-                {
-                    DisableBuffering();
-                }
-                else
-                {
-                    BufferedStream.Write(buffer, offset, count);
-                }
+                BufferBytes(buffer, offset, count);
             }
         }
 
@@ -106,14 +129,8 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
             if (BufferingEnabled)
             {
-                if (BufferedStream.Length + count > _maxBufferSize)
-                {
-                    DisableBuffering();
-                }
-                else
-                {
-                    await BufferedStream.WriteAsync(buffer, offset, count, cancellationToken);
-                }
+                // TODO: handle cancellation?
+                BufferBytes(buffer, offset, count);
             }
         }
 
@@ -131,14 +148,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
             if (BufferingEnabled)
             {
-                if (BufferedStream.Length + 1 > _maxBufferSize)
-                {
-                    DisableBuffering();
-                }
-                else
-                {
-                    BufferedStream.WriteByte(value);
-                }
+                BufferBytes(new[] { value }, 0, 1);
             }
         }
 
@@ -184,6 +194,35 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 callback?.Invoke(tcs.Task);
             }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
             return tcs.Task;
+        }
+
+        private void BufferBytes(byte[] buffer, int offset, int count)
+        {
+            // Disable if the body exceeds max buffer size
+            if (_bufferedOutputLength + count > _maxBufferSize)
+            {
+                DisableBuffering();
+            }
+            else
+            {
+                var bytesRemainingInShard = _shardSize - (int)(_bufferedOutputLength % _shardSize);
+                while (count > 0)
+                {
+                    var bytesToWrite = Math.Min(count, bytesRemainingInShard);
+                    _bufferStream.Write(buffer, offset, bytesToWrite);
+                    count -= bytesToWrite;
+                    bytesRemainingInShard -= bytesToWrite;
+                    offset += bytesToWrite;
+                    _bufferedOutputLength += bytesToWrite;
+
+                    if (count > 0 && bytesRemainingInShard == 0)
+                    {
+                        _shards.Add(_bufferStream.ToArray());
+                        _bufferStream.SetLength(0);
+                        bytesRemainingInShard = _shardSize;
+                    }
+                }
+            }
         }
     }
 }

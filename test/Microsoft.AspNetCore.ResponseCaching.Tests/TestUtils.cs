@@ -44,7 +44,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             return new ResponseCacheKeyProvider(new DefaultObjectPoolProvider(), Options.Create(options));
         }
 
-        internal static IWebHostBuilder CreateBuilderWithResponseCache(
+        internal static IEnumerable<IWebHostBuilder> CreateBuildersWithResponseCache(
             Action<IApplicationBuilder> configureDelegate = null,
             ResponseCacheOptions options = null,
             RequestDelegate requestDelegate = null)
@@ -62,10 +62,24 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
                 requestDelegate = TestRequestDelegate;
             }
 
-            return new WebHostBuilder()
+            // Test with MemoryResponseCacheStore
+            yield return new WebHostBuilder()
                 .ConfigureServices(services =>
                 {
-                    services.AddDistributedResponseCache();
+                    services.AddMemoryResponseCacheStore();
+                })
+                .Configure(app =>
+                {
+                    configureDelegate(app);
+                    app.UseResponseCache(options);
+                    app.Run(requestDelegate);
+                });
+
+            // Test with DistributedResponseCacheStore
+            yield return new WebHostBuilder()
+                .ConfigureServices(services =>
+                {
+                    services.AddDistributedResponseCacheStore(storeOptions => storeOptions.DistributedCacheBodyShardSize = 5);
                 })
                 .Configure(app =>
                 {
@@ -167,11 +181,11 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
 
     internal class TestResponseCacheStore : IResponseCacheStore
     {
-        private readonly IDictionary<string, object> _storage = new Dictionary<string, object>();
+        private readonly IDictionary<string, IResponseCacheEntry> _storage = new Dictionary<string, IResponseCacheEntry>();
         public int GetCount { get; private set; }
         public int SetCount { get; private set; }
 
-        public Task<object> GetAsync(string key)
+        public Task<IResponseCacheEntry> GetAsync(string key)
         {
             GetCount++;
             try
@@ -180,7 +194,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             }
             catch
             {
-                return Task.FromResult<object>(null);
+                return Task.FromResult<IResponseCacheEntry>(null);
             }
         }
 
@@ -189,7 +203,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             return TaskCache.CompletedTask;
         }
 
-        public Task SetAsync(string key, object entry, TimeSpan validFor)
+        public Task SetAsync(string key, IResponseCacheEntry entry, TimeSpan validFor)
         {
             SetCount++;
             _storage[key] = entry;

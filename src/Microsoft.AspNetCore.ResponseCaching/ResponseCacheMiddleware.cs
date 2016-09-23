@@ -130,16 +130,8 @@ namespace Microsoft.AspNetCore.ResponseCaching
 
                     response.Headers[HeaderNames.Age] = context.CachedEntryAge.Value.TotalSeconds.ToString("F0", CultureInfo.InvariantCulture);
 
-                    var body = context.CachedResponse.Body ??
-                        ((CachedResponseBody) await _store.GetAsync(context.CachedResponse.BodyKeyPrefix))?.Body;
-
-                    // If the body is not found, something went wrong.
-                    if (body == null)
-                    {
-                        return false;
-                    }
-
                     // Copy the cached response body
+                    var body = context.CachedResponse.Body;
                     if (body.Length > 0)
                     {
                         // Add a content-length if required
@@ -147,7 +139,9 @@ namespace Microsoft.AspNetCore.ResponseCaching
                         {
                             response.ContentLength = body.Length;
                         }
-                        await response.Body.WriteAsync(body, 0, body.Length);
+
+                        await body.CopyToAsync(response.Body);
+                        if (body is BufferedOutput) body.Position = 0; // Temp: need to clone the stream, this is not thread safe
                     }
                 }
 
@@ -244,7 +238,6 @@ namespace Microsoft.AspNetCore.ResponseCaching
                 // Store the response on the state
                 context.CachedResponse = new CachedResponse
                 {
-                    BodyKeyPrefix = FastGuid.NewGuid().IdString,
                     Created = context.ResponseDate.Value,
                     StatusCode = context.HttpContext.Response.StatusCode
                 };
@@ -268,26 +261,10 @@ namespace Microsoft.AspNetCore.ResponseCaching
             var contentLength = context.TypedResponseHeaders.ContentLength;
             if (context.ShouldCacheResponse &&
                 context.ResponseCacheStream.BufferingEnabled &&
-                (!contentLength.HasValue || contentLength == context.ResponseCacheStream.BufferedStream.Length))
+                (!contentLength.HasValue || contentLength == context.ResponseCacheStream.Length))
             {
-                if (context.ResponseCacheStream.BufferedStream.Length >= _options.MinimumSplitBodySize)
-                {
-                    // Store response and response body separately
-                    await _store.SetAsync(context.StorageVaryKey ?? context.BaseKey, context.CachedResponse, context.CachedResponseValidFor);
-
-                    var cachedResponseBody = new CachedResponseBody()
-                    {
-                        Body = context.ResponseCacheStream.BufferedStream.ToArray()
-                    };
-
-                    await _store.SetAsync(context.CachedResponse.BodyKeyPrefix, cachedResponseBody, context.CachedResponseValidFor);
-                }
-                else
-                {
-                    // Store response and response body together
-                    context.CachedResponse.Body = context.ResponseCacheStream.BufferedStream.ToArray();
-                    await _store.SetAsync(context.StorageVaryKey ?? context.BaseKey, context.CachedResponse, context.CachedResponseValidFor);
-                }
+                context.CachedResponse.Body = context.ResponseCacheStream.GetBufferedOutput();
+                await _store.SetAsync(context.StorageVaryKey ?? context.BaseKey, context.CachedResponse, context.CachedResponseValidFor);
             }
         }
 
@@ -310,7 +287,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
         {
             // Shim response stream
             context.OriginalResponseStream = context.HttpContext.Response.Body;
-            context.ResponseCacheStream = new ResponseCacheStream(context.OriginalResponseStream, _options.MaximumCachedBodySize);
+            context.ResponseCacheStream = new ResponseCacheStream(context.OriginalResponseStream, _options.MaximumCachedBodySize, _options.BodyBufferShardSize);
             context.HttpContext.Response.Body = context.ResponseCacheStream;
 
             // Shim IHttpSendFileFeature
@@ -381,7 +358,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
                 var originalArray = stringValues.ToArray();
                 var newArray = new string[originalArray.Length];
 
-                for (int i = 0; i < originalArray.Length; i++)
+                for (var i = 0; i < originalArray.Length; i++)
                 {
                     newArray[i] = originalArray[i].ToUpperInvariant();
                 }
