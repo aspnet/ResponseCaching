@@ -48,7 +48,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
                 {
                     Created = DateTimeOffset.UtcNow,
                     StatusCode = StatusCodes.Status200OK,
-                    Body = new BufferedOutput(new List<byte[]>(new[] { body }), body.Length),
+                    Body = new BufferedOutput(new List<byte[]>(new[] { body }), body.Length, body.Length),
                     Headers = headers
                 },
                 ShardKeyPrefix = FastGuid.NewGuid().IdString,
@@ -71,7 +71,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
                 {
                     Created = DateTimeOffset.UtcNow,
                     StatusCode = StatusCodes.Status200OK,
-                    Body = new BufferedOutput(new List<byte[]>(new[] { body }), body.Length),
+                    Body = new BufferedOutput(new List<byte[]>(new[] { body }), body.Length, body.Length),
                     Headers = headers
                 },
                 ShardKeyPrefix = FastGuid.NewGuid().IdString,
@@ -94,7 +94,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
                 {
                     Created = DateTimeOffset.UtcNow,
                     StatusCode = StatusCodes.Status200OK,
-                    Body = new BufferedOutput(new List<byte[]>(new[] { body }), body.Length),
+                    Body = new BufferedOutput(new List<byte[]>(new[] { body }), body.Length, body.Length),
                     Headers = headers
                 },
                 ShardKeyPrefix = FastGuid.NewGuid().IdString,

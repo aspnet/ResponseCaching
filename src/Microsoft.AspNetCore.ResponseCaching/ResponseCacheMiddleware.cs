@@ -141,6 +141,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
                         }
 
                         await body.CopyToAsync(response.Body);
+                        if (body is BufferedOutput) body.Position = 0; // Temp: need to clone the stream
                     }
                 }
 

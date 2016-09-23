@@ -40,19 +40,40 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
         public override long Position
         {
-            get { throw new NotSupportedException("The stream does not support seeking."); }
-            set { throw new NotSupportedException("The stream does not support seeking."); }
+            get
+            {
+                throw new NotSupportedException("The stream does not support seeking.");
+            }
+            set
+            {
+                throw new NotSupportedException("The stream does not support seeking.");
+            }
         }
 
-        public override void Flush() { throw new NotSupportedException("The stream does not support writing."); }
+        public override void Flush()
+        {
+            throw new NotSupportedException("The stream does not support writing.");
+        }
 
-        public override int Read(byte[] buffer, int offset, int count) { throw new NotSupportedException("The stream does not support reading."); }
+        public override int Read(byte[] buffer, int offset, int count)
+        {
+            throw new NotSupportedException("The stream does not support reading.");
+        }
 
-        public override long Seek(long offset, SeekOrigin origin) { throw new NotSupportedException("The stream does not support seeking."); }
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            throw new NotSupportedException("The stream does not support seeking.");
+        }
 
-        public override void SetLength(long value) { throw new NotSupportedException("The stream does not support seeking or writing."); }
+        public override void SetLength(long value)
+        {
+            throw new NotSupportedException("The stream does not support seeking or writing.");
+        }
 
-        public override void Write(byte[] buffer, int offset, int count) { throw new NotSupportedException("The stream does not support writing."); }
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            throw new NotSupportedException("The stream does not support writing.");
+        }
 
         public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {

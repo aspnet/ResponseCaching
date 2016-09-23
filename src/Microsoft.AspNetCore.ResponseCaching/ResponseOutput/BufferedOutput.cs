@@ -13,10 +13,11 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
     {
         private readonly List<byte[]> _shards;
         private readonly long _length;
+        private readonly int _shardSize;
         private int _shardPosition;
         private int _shardOffset;
 
-        internal BufferedOutput(List<byte[]> shards, long length)
+        internal BufferedOutput(List<byte[]> shards, int shardSize, long length)
         {
             if (shards == null)
             {
@@ -24,12 +25,13 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             }
 
             _shards = shards;
+            _shardSize = shardSize;
             _length = length;
         }
 
         public override bool CanRead => true;
 
-        public override bool CanSeek => false;
+        public override bool CanSeek => true;
 
         public override bool CanWrite => false;
 
@@ -37,11 +39,26 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
         public override long Position
         {
-            get { throw new NotSupportedException("The stream does not support seeking."); }
-            set { throw new NotSupportedException("The stream does not support seeking."); }
+            get
+            {
+                return _shardPosition * _shardSize + _shardOffset;
+            }
+            set
+            {
+                if (value < 0 || value > Length)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(value), value, $"The Position must be within the length of the Stream: {Length}");
+                }
+
+                _shardOffset = (int)(value % _shardSize);
+                _shardPosition = (int)(value / _shardSize);
+            }
         }
 
-        public override void Flush() { }
+        public override void Flush()
+        {
+            throw new NotSupportedException("The stream does not support writing.");
+        }
 
         // Note: Requires soft copies of cached entries on retrival from cache for concurrent stateful reads.
         public override int Read(byte[] buffer, int offset, int count)
@@ -74,11 +91,33 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             return Task.FromResult(Read(buffer, offset, count));
         }
 
-        public override long Seek(long offset, SeekOrigin origin) { throw new NotSupportedException("The stream does not support seeking."); }
+        public override long Seek(long offset, SeekOrigin origin)
+        {
+            if (origin == SeekOrigin.Begin)
+            {
+                Position = offset;
+            }
+            else if (origin == SeekOrigin.End)
+            {
+                Position = Length + offset;
+            }
+            else // if (origin == SeekOrigin.Current)
+            {
+                Position = Position + offset;
+            }
 
-        public override void SetLength(long value) { throw new NotSupportedException("The stream does not support writing."); }
+            return Position;
+        }
 
-        public override void Write(byte[] buffer, int offset, int count) { throw new NotSupportedException("The stream does not support writing."); }
+        public override void SetLength(long value)
+        {
+            throw new NotSupportedException("The stream does not support writing.");
+        }
+
+        public override void Write(byte[] buffer, int offset, int count)
+        {
+            throw new NotSupportedException("The stream does not support writing.");
+        }
 
         public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
         {
@@ -91,9 +130,9 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 throw new NotSupportedException("The destination stream does not support writing.");
             }
 
-            foreach (var shard in _shards)
+            for (; _shardPosition < _shards.Count; _shardPosition++, _shardOffset = 0)
             {
-                await destination.WriteAsync(shard, 0, shard.Length, cancellationToken);
+                await destination.WriteAsync(_shards[_shardPosition], _shardOffset, _shards[_shardPosition].Length - _shardOffset, cancellationToken);
             }
         }
     }

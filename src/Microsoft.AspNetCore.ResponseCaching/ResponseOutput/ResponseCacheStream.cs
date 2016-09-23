@@ -48,7 +48,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             }
         }
 
-        public Stream GetBufferedOutput()
+        internal Stream GetBufferedOutput()
         {
             if (_bufferedOutput == null)
             {
@@ -57,12 +57,12 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                     // Add the last shard
                     _shards.Add(_bufferStream.ToArray());
                 }
-                _bufferedOutput = new BufferedOutput(_shards, _bufferedOutputLength);
+                _bufferedOutput = new BufferedOutput(_shards, _shardSize, _bufferedOutputLength);
             }
             return _bufferedOutput;
         }
 
-        public void DisableBuffering()
+        internal void DisableBuffering()
         {
             BufferingEnabled = false;
 
