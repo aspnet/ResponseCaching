@@ -16,28 +16,32 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         private readonly MemoryStream _bufferStream = new MemoryStream();
         private readonly int _shardSize;
         private long _length;
+        private bool _shardsFinalized;
 
         internal WriteOnlyShardStream(int shardSize)
         {
             _shardSize = shardSize;
         }
 
-        public List<byte[]> Shards
+        // Extracting the buffered shards closes the stream for writing
+        internal List<byte[]> Shards
         {
             get
             {
-                FinalizeShards();
+                if (!_shardsFinalized)
+                {
+                    _shardsFinalized = true;
+                    FinalizeShards();
+                }
                 return _shards;
             }
         }
-
-        public int ShardSize => _shardSize;
 
         public override bool CanRead => false;
 
         public override bool CanSeek => false;
 
-        public override bool CanWrite => true;
+        public override bool CanWrite => !_shardsFinalized;
 
         public override long Length => _length;
 
@@ -60,12 +64,12 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             {
                 // Add the last shard
                 _shards.Add(_bufferStream.ToArray());
-
-                // Clean up the memory stream
-                _bufferStream.SetLength(0);
-                _bufferStream.Capacity = 0;
-                _bufferStream.Dispose();
             }
+
+            // Clean up the memory stream
+            _bufferStream.SetLength(0);
+            _bufferStream.Capacity = 0;
+            _bufferStream.Dispose();
         }
 
         public override void Flush()
@@ -75,11 +79,6 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         public override int Read(byte[] buffer, int offset, int count)
         {
             throw new NotSupportedException("The stream does not support reading.");
-        }
-
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
-            return Task.FromResult(Read(buffer, offset, count));
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -94,6 +93,11 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
         public override void Write(byte[] buffer, int offset, int count)
         {
+            if (!CanWrite)
+            {
+                throw new InvalidOperationException("The stream has been closed for writing.");
+            }
+
             var bytesRemainingInShard = _shardSize - (int)(_length % _shardSize);
             while (count > 0)
             {
@@ -117,6 +121,12 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         {
             Write(buffer, offset, count);
             return TaskCache.CompletedTask;
+        }
+
+        // TODO: this can probably be improved
+        public override void WriteByte(byte value)
+        {
+            Write(new[] { value }, 0, 1);
         }
     }
 }

@@ -85,11 +85,6 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             return bytesRead;
         }
 
-        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
-        {
-            return Task.FromResult(Read(buffer, offset, count));
-        }
-
         public override long Seek(long offset, SeekOrigin origin)
         {
             if (origin == SeekOrigin.Begin)

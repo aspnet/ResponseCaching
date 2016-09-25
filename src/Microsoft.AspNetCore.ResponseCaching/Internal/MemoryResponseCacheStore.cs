@@ -27,7 +27,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             }
 
             _cache = cache;
-            _options = options.Value;
+            _options = options.Value; // TODO: should this be a different option?
         }
 
         public Task<IResponseCacheEntry> GetAsync(string key)

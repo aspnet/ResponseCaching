@@ -11,9 +11,9 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
     internal class ResponseCacheStream : Stream
     {
         private readonly Stream _innerStream;
-        private readonly WriteOnlyShardStream _writeOnlyStream;
         private readonly long _maxBufferSize;
         private readonly int _shardSize;
+        private WriteOnlyShardStream _writeOnlyStream;
         private ReadOnlyShardStream _readOnlyStream;
 
         internal ResponseCacheStream(Stream innerStream, long maxBufferSize, int shardSize)
@@ -49,6 +49,9 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             if (_readOnlyStream == null)
             {
                 _readOnlyStream = new ReadOnlyShardStream(_writeOnlyStream.Shards, _shardSize, _writeOnlyStream.Length);
+
+                // TODO: clean up the write stream
+                _writeOnlyStream = null;
             }
             return _readOnlyStream;
         }
@@ -57,7 +60,8 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         {
             BufferingEnabled = false;
 
-            // Clean up write only shard stream
+            // TODO: clean up the write stream
+            _writeOnlyStream = null;
         }
 
         public override void SetLength(long value)
@@ -94,9 +98,13 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 throw;
             }
 
-            if (BufferingEnabled)
+            if (BufferingEnabled && Length + count <= _maxBufferSize)
             {
-                BufferBytes(buffer, offset, count);
+                _writeOnlyStream.Write(buffer, offset, count);
+            }
+            else
+            {
+                DisableBuffering();
             }
         }
 
@@ -112,10 +120,13 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 throw;
             }
 
-            if (BufferingEnabled)
+            if (BufferingEnabled && Length + count <= _maxBufferSize)
             {
-                // TODO: handle cancellation?
-                BufferBytes(buffer, offset, count);
+                await _writeOnlyStream.WriteAsync(buffer, offset, count, cancellationToken);
+            }
+            else
+            {
+                DisableBuffering();
             }
         }
 
@@ -131,9 +142,13 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 throw;
             }
 
-            if (BufferingEnabled)
+            if (BufferingEnabled && Length + 1 <= _maxBufferSize)
             {
-                BufferBytes(new[] { value }, 0, 1);
+                _writeOnlyStream.WriteByte(value);
+            }
+            else
+            {
+                DisableBuffering();
             }
         }
 
@@ -158,7 +173,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             ((Task)asyncResult).GetAwaiter().GetResult();
         }
 
-        private static IAsyncResult ToIAsyncResult(Task task, AsyncCallback callback, object state)
+        internal static IAsyncResult ToIAsyncResult(Task task, AsyncCallback callback, object state)
         {
             var tcs = new TaskCompletionSource<int>(state);
             task.ContinueWith(t =>
@@ -179,19 +194,6 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 callback?.Invoke(tcs.Task);
             }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
             return tcs.Task;
-        }
-
-        private void BufferBytes(byte[] buffer, int offset, int count)
-        {
-            // Disable if the body exceeds max buffer size
-            if (Length + count > _maxBufferSize)
-            {
-                DisableBuffering();
-            }
-            else
-            {
-                _writeOnlyStream.Write(buffer, offset, count);
-            }
         }
     }
 }
