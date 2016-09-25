@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.AspNetCore.ResponseCaching.Internal
 {
-    internal class BufferedOutput : Stream
+    internal class ReadOnlyShardStream : Stream
     {
         private readonly List<byte[]> _shards;
         private readonly long _length;
@@ -17,7 +17,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         private int _shardPosition;
         private int _shardOffset;
 
-        internal BufferedOutput(List<byte[]> shards, int shardSize, long length)
+        internal ReadOnlyShardStream(List<byte[]> shards, int shardSize, long length)
         {
             if (shards == null)
             {
@@ -60,7 +60,6 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             throw new NotSupportedException("The stream does not support writing.");
         }
 
-        // Note: Requires soft copies of cached entries on retrival from cache for concurrent stateful reads.
         public override int Read(byte[] buffer, int offset, int count)
         {
             var bytesRead = 0;

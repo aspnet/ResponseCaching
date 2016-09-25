@@ -141,7 +141,6 @@ namespace Microsoft.AspNetCore.ResponseCaching
                         }
 
                         await body.CopyToAsync(response.Body);
-                        if (body is BufferedOutput) body.Position = 0; // Temp: need to clone the stream, this is not thread safe
                     }
                 }
 
@@ -263,7 +262,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
                 context.ResponseCacheStream.BufferingEnabled &&
                 (!contentLength.HasValue || contentLength == context.ResponseCacheStream.Length))
             {
-                context.CachedResponse.Body = context.ResponseCacheStream.GetBufferedOutput();
+                context.CachedResponse.Body = context.ResponseCacheStream.GetShardStream();
                 await _store.SetAsync(context.StorageVaryKey ?? context.BaseKey, context.CachedResponse, context.CachedResponseValidFor);
             }
         }

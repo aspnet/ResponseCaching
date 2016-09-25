@@ -3,28 +3,52 @@
 
 using System;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Internal;
+using Microsoft.Extensions.Options;
 
 namespace Microsoft.AspNetCore.ResponseCaching.Internal
 {
     public class MemoryResponseCacheStore : IResponseCacheStore
     {
         private readonly IMemoryCache _cache;
+        private readonly ResponseCacheOptions _options;
 
-        public MemoryResponseCacheStore(IMemoryCache cache)
+        public MemoryResponseCacheStore(IMemoryCache cache, IOptions<ResponseCacheOptions> options)
         {
             if (cache == null)
             {
                 throw new ArgumentNullException(nameof(cache));
             }
+            if (options == null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
 
             _cache = cache;
+            _options = options.Value;
         }
 
         public Task<IResponseCacheEntry> GetAsync(string key)
         {
-            return Task.FromResult(_cache.Get(key) as IResponseCacheEntry);
+            var entry = _cache.Get(key);
+
+            if (entry is MemoryCachedResponse)
+            {
+                var memoryCachedResponse = (MemoryCachedResponse)entry;
+                return Task.FromResult<IResponseCacheEntry>(new CachedResponse()
+                {
+                    Created = memoryCachedResponse.Created,
+                    StatusCode = memoryCachedResponse.StatusCode,
+                    Headers = memoryCachedResponse.Headers,
+                    Body = new ReadOnlyShardStream(memoryCachedResponse.Shards, memoryCachedResponse.ShardSize, memoryCachedResponse.BodyLength)
+                });
+            }
+            else
+            {
+                return Task.FromResult(entry as IResponseCacheEntry);
+            }
         }
 
         public Task RemoveAsync(string key)
@@ -33,16 +57,40 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             return TaskCache.CompletedTask;
         }
 
-        public Task SetAsync(string key, IResponseCacheEntry entry, TimeSpan validFor)
+        public async Task SetAsync(string key, IResponseCacheEntry entry, TimeSpan validFor)
         {
-            _cache.Set(
-                key,
-                entry,
-                new MemoryCacheEntryOptions()
-                {
-                    AbsoluteExpirationRelativeToNow = validFor
-                });
-            return TaskCache.CompletedTask;
+            if (entry is CachedResponse)
+            {
+                var cachedResponse = (CachedResponse)entry;
+                var shardStream = new WriteOnlyShardStream(_options.BodyBufferShardSize);
+                await cachedResponse.Body.CopyToAsync(shardStream);
+
+                _cache.Set(
+                    key,
+                    new MemoryCachedResponse()
+                    {
+                        Created = cachedResponse.Created,
+                        StatusCode = cachedResponse.StatusCode,
+                        Headers = cachedResponse.Headers,
+                        Shards = shardStream.Shards,
+                        ShardSize = _options.BodyBufferShardSize,
+                        BodyLength = shardStream.Length
+                    },
+                    new MemoryCacheEntryOptions()
+                    {
+                        AbsoluteExpirationRelativeToNow = validFor
+                    });
+            }
+            else
+            {
+                _cache.Set(
+                    key,
+                    entry,
+                    new MemoryCacheEntryOptions()
+                    {
+                        AbsoluteExpirationRelativeToNow = validFor
+                    });
+            }
         }
     }
 }
