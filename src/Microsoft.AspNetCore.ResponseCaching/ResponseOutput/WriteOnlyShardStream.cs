@@ -16,7 +16,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         private readonly MemoryStream _bufferStream = new MemoryStream();
         private readonly int _shardSize;
         private long _length;
-        private bool _shardsFinalized;
+        private bool _shardsExtracted;
 
         internal WriteOnlyShardStream(int shardSize)
         {
@@ -28,9 +28,9 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         {
             get
             {
-                if (!_shardsFinalized)
+                if (!_shardsExtracted)
                 {
-                    _shardsFinalized = true;
+                    _shardsExtracted = true;
                     FinalizeShards();
                 }
                 return _shards;
@@ -41,7 +41,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
         public override bool CanSeek => false;
 
-        public override bool CanWrite => !_shardsFinalized;
+        public override bool CanWrite => !_shardsExtracted;
 
         public override long Length => _length;
 
@@ -98,22 +98,20 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 throw new InvalidOperationException("The stream has been closed for writing.");
             }
 
-            var bytesRemainingInShard = _shardSize - (int)_bufferStream.Length;
             while (count > 0)
             {
-                var bytesWritten = Math.Min(count, bytesRemainingInShard);
-                _bufferStream.Write(buffer, offset, bytesWritten);
-                count -= bytesWritten;
-                bytesRemainingInShard -= bytesWritten;
-                offset += bytesWritten;
-                _length += bytesWritten;
-
-                if (count > 0 && bytesRemainingInShard == 0)
+                if ((int)_bufferStream.Length == _shardSize)
                 {
                     _shards.Add(_bufferStream.ToArray());
                     _bufferStream.SetLength(0);
-                    bytesRemainingInShard = _shardSize;
                 }
+
+                var bytesWritten = Math.Min(count, _shardSize - (int)_bufferStream.Length);
+
+                _bufferStream.Write(buffer, offset, bytesWritten);
+                count -= bytesWritten;
+                offset += bytesWritten;
+                _length += bytesWritten;
             }
         }
 
@@ -137,6 +135,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             }
 
             _bufferStream.WriteByte(value);
+            _length++;
         }
 
 #if NETSTANDARD1_3

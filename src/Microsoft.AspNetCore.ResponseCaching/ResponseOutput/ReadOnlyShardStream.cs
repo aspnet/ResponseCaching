@@ -14,7 +14,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         private readonly List<byte[]> _shards;
         private readonly long _length;
         private readonly int _shardSize;
-        private int _shardPosition;
+        private int _shardIndex;
         private int _shardOffset;
 
         internal ReadOnlyShardStream(List<byte[]> shards, int shardSize, long length)
@@ -41,7 +41,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         {
             get
             {
-                return _shardPosition * _shardSize + _shardOffset;
+                return _shardIndex * _shardSize + _shardOffset;
             }
             set
             {
@@ -51,7 +51,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 }
 
                 _shardOffset = (int)(value % _shardSize);
-                _shardPosition = (int)(value / _shardSize);
+                _shardIndex = (int)(value / _shardSize);
             }
         }
 
@@ -62,24 +62,33 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            var bytesRead = 0;
-
-            while (count > 0 && _shardPosition < _shards.Count && _shardOffset < _shards[_shardPosition].Length)
+            if (_shardIndex == _shards.Count)
             {
-                // Read up to the end of the shard
-                var bytesToRead = Math.Min(count, _shards[_shardPosition].Length - _shardOffset);
-                Array.Copy(_shards[_shardPosition], _shardOffset, buffer, offset, bytesToRead);
-                bytesRead += bytesToRead;
-                _shardOffset += bytesToRead;
-                offset += bytesToRead;
-                count -= bytesToRead;
+                return 0;
+            }
 
-                if (_shardOffset == _shards[_shardPosition].Length)
+            var bytesRead = 0;
+            while (count > 0)
+            {
+                if (_shardOffset == _shards[_shardIndex].Length)
                 {
                     // Move to the next shard
-                    _shardPosition++;
+                    _shardIndex++;
                     _shardOffset = 0;
+
+                    if (_shardIndex == _shards.Count)
+                    {
+                        break;
+                    }
                 }
+
+                // Read up to the end of the shard
+                var shardBytesRead = Math.Min(count, _shards[_shardIndex].Length - _shardOffset);
+                Array.Copy(_shards[_shardIndex], _shardOffset, buffer, offset, shardBytesRead);
+                bytesRead += shardBytesRead;
+                _shardOffset += shardBytesRead;
+                offset += shardBytesRead;
+                count -= shardBytesRead;
             }
 
             return bytesRead;
@@ -97,18 +106,17 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 return -1;
             }
 
-            if (_shardOffset == _shards[_shardPosition].Length)
+            if (_shardOffset == _shards[_shardIndex].Length)
             {
                 // Move to the next shard
-                _shardPosition++;
+                _shardIndex++;
                 _shardOffset = 0;
             }
-            else
-            {
-                _shardOffset++;
-            }
 
-            return _shards[_shardPosition][_shardOffset];
+            var byteRead = _shards[_shardIndex][_shardOffset];
+            _shardOffset++;
+
+            return byteRead;
         }
 
 #if NETSTANDARD1_3
@@ -199,9 +207,9 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 throw new NotSupportedException("The destination stream does not support writing.");
             }
 
-            for (; _shardPosition < _shards.Count; _shardPosition++, _shardOffset = 0)
+            for (; _shardIndex < _shards.Count; _shardIndex++, _shardOffset = 0)
             {
-                await destination.WriteAsync(_shards[_shardPosition], _shardOffset, _shards[_shardPosition].Length - _shardOffset, cancellationToken);
+                await destination.WriteAsync(_shards[_shardIndex], _shardOffset, _shards[_shardIndex].Length - _shardOffset, cancellationToken);
             }
         }
     }
