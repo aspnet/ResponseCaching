@@ -41,7 +41,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                     Created = memoryCachedResponse.Created,
                     StatusCode = memoryCachedResponse.StatusCode,
                     Headers = memoryCachedResponse.Headers,
-                    Body = new ReadOnlyShardStream(memoryCachedResponse.Shards, memoryCachedResponse.ShardSize, memoryCachedResponse.BodyLength)
+                    Body = new ReadOnlyShardStream(memoryCachedResponse.Shards, memoryCachedResponse.BodyLength)
                 });
             }
             else
@@ -66,7 +66,6 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                         StatusCode = cachedResponse.StatusCode,
                         Headers = cachedResponse.Headers,
                         Shards = shardStream.Shards,
-                        ShardSize = _options.BodyShardSize,
                         BodyLength = shardStream.Length
                     },
                     new MemoryCacheEntryOptions()

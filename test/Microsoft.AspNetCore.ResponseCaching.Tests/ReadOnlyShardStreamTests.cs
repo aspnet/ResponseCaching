@@ -55,14 +55,14 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         [Fact]
         public void ReadOnlyShardStream_NullShards_Throws()
         {
-            Assert.Throws<ArgumentNullException>(() => new ReadOnlyShardStream(null, 0, 0));
+            Assert.Throws<ArgumentNullException>(() => new ReadOnlyShardStream(null, 0));
         }
 
         [Theory]
         [MemberData(nameof(TestStreams))]
         public void ReadByte_CanReadAllBytes(TestStreamInitInfo info)
         {
-            var stream = new ReadOnlyShardStream(info.Shards, info.ShardSize, info.Length);
+            var stream = new ReadOnlyShardStream(info.Shards, info.Length);
 
             for (var i = 0; i < stream.Length; i++)
             {
@@ -78,7 +78,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         [MemberData(nameof(TestStreams))]
         public void Read_CountLessThanShardSize_CanReadAllBytes(TestStreamInitInfo info)
         {
-            var stream = new ReadOnlyShardStream(info.Shards, info.ShardSize, info.Length);
+            var stream = new ReadOnlyShardStream(info.Shards, info.Length);
             var count = info.ShardSize - 1;
 
             for (var i = 0; i < stream.Length; i+=count)
@@ -103,7 +103,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         [MemberData(nameof(TestStreams))]
         public void Read_CountEqualShardSize_CanReadAllBytes(TestStreamInitInfo info)
         {
-            var stream = new ReadOnlyShardStream(info.Shards, info.ShardSize, info.Length);
+            var stream = new ReadOnlyShardStream(info.Shards, info.Length);
             var count = info.ShardSize;
 
             for (var i = 0; i < stream.Length; i += count)
@@ -128,7 +128,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         [MemberData(nameof(TestStreams))]
         public void Read_CountGreaterThanShardSize_CanReadAllBytes(TestStreamInitInfo info)
         {
-            var stream = new ReadOnlyShardStream(info.Shards, info.ShardSize, info.Length);
+            var stream = new ReadOnlyShardStream(info.Shards, info.Length);
             var count = info.ShardSize + 1;
 
             for (var i = 0; i < stream.Length; i += count)
@@ -154,7 +154,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         [MemberData(nameof(TestStreams))]
         public void CopyToAsync_CopiesAllBytes(TestStreamInitInfo info)
         {
-            var stream = new ReadOnlyShardStream(info.Shards, info.ShardSize, info.Length);
+            var stream = new ReadOnlyShardStream(info.Shards, info.Length);
             var writeStream = new WriteOnlyShardStream(info.ShardSize);
 
             stream.CopyTo(writeStream);

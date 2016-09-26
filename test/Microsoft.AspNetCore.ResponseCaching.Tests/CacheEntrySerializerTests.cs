@@ -46,7 +46,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             {
                 Created = DateTimeOffset.UtcNow,
                 StatusCode = StatusCodes.Status200OK,
-                Body = new ReadOnlyShardStream(new List<byte[]>(new[] { body }), body.Length, body.Length),
+                Body = new ReadOnlyShardStream(new List<byte[]>(new[] { body }), body.Length),
                 Headers = headers
             };
 
@@ -63,7 +63,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             {
                 Created = DateTimeOffset.UtcNow,
                 StatusCode = StatusCodes.Status200OK,
-                Body = new ReadOnlyShardStream(new List<byte[]>(new[] { body }), body.Length, body.Length),
+                Body = new ReadOnlyShardStream(new List<byte[]>(new[] { body }), body.Length),
                 Headers = headers
             };
 
@@ -80,7 +80,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             {
                 Created = DateTimeOffset.UtcNow,
                 StatusCode = StatusCodes.Status200OK,
-                Body = new ReadOnlyShardStream(new List<byte[]>(new[] { body }), body.Length, body.Length),
+                Body = new ReadOnlyShardStream(new List<byte[]>(new[] { body }), body.Length),
                 Headers = headers
             };
 

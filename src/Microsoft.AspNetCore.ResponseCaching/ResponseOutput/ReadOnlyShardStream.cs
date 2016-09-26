@@ -13,12 +13,11 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
     {
         private readonly List<byte[]> _shards;
         private readonly long _length;
-        private readonly int _shardSize;
         private int _shardIndex;
         private int _shardOffset;
         private long _position;
 
-        internal ReadOnlyShardStream(List<byte[]> shards, int shardSize, long length)
+        internal ReadOnlyShardStream(List<byte[]> shards, long length)
         {
             if (shards == null)
             {
@@ -26,7 +25,6 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             }
 
             _shards = shards;
-            _shardSize = shardSize;
             _length = length;
         }
 

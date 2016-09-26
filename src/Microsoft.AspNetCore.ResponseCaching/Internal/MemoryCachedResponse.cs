@@ -17,8 +17,6 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
         public List<byte[]> Shards { get; set; }
 
-        public int ShardSize { get; set; }
-
         public long BodyLength { get; set; }
     }
 }

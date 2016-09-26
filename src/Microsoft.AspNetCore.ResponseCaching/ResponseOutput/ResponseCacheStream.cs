@@ -48,7 +48,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         {
             if (_readOnlyStream == null)
             {
-                _readOnlyStream = new ReadOnlyShardStream(_writeOnlyStream.Shards, _shardSize, _writeOnlyStream.Length);
+                _readOnlyStream = new ReadOnlyShardStream(_writeOnlyStream.Shards, _writeOnlyStream.Length);
 
                 // TODO: clean up the write stream
                 _writeOnlyStream = null;

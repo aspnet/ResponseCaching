@@ -117,7 +117,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 Created = created,
                 StatusCode = statusCode,
                 Headers = headers,
-                Body = new ReadOnlyShardStream(body, bodyLength, bodyLength)
+                Body = new ReadOnlyShardStream(body, bodyLength)
             };
         }
 
