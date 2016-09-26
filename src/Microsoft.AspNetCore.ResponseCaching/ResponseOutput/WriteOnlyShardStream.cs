@@ -98,7 +98,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 throw new InvalidOperationException("The stream has been closed for writing.");
             }
 
-            var bytesRemainingInShard = _shardSize - (int)(_length % _shardSize);
+            var bytesRemainingInShard = _shardSize - (int)_bufferStream.Length;
             while (count > 0)
             {
                 var bytesWritten = Math.Min(count, bytesRemainingInShard);
@@ -123,10 +123,20 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             return TaskCache.CompletedTask;
         }
 
-        // TODO: this can be improved
         public override void WriteByte(byte value)
         {
-            Write(new[] { value }, 0, 1);
+            if (!CanWrite)
+            {
+                throw new InvalidOperationException("The stream has been closed for writing.");
+            }
+
+            if ((int)_bufferStream.Length == _shardSize)
+            {
+                _shards.Add(_bufferStream.ToArray());
+                _bufferStream.SetLength(0);
+            }
+
+            _bufferStream.WriteByte(value);
         }
 
 #if NETSTANDARD1_3
