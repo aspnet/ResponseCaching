@@ -158,7 +158,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
 #endif
         {
-            return ToIAsyncResult(WriteAsync(buffer, offset, count), callback, state);
+            return StreamUtilities.ToIAsyncResult(WriteAsync(buffer, offset, count), callback, state);
         }
 #if NETSTANDARD1_3
         public void EndWrite(IAsyncResult asyncResult)
@@ -171,29 +171,6 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 throw new ArgumentNullException(nameof(asyncResult));
             }
             ((Task)asyncResult).GetAwaiter().GetResult();
-        }
-
-        internal static IAsyncResult ToIAsyncResult(Task task, AsyncCallback callback, object state)
-        {
-            var tcs = new TaskCompletionSource<int>(state);
-            task.ContinueWith(t =>
-            {
-                if (t.IsFaulted)
-                {
-                    tcs.TrySetException(t.Exception.InnerExceptions);
-                }
-                else if (t.IsCanceled)
-                {
-                    tcs.TrySetCanceled();
-                }
-                else
-                {
-                    tcs.TrySetResult(0);
-                }
-
-                callback?.Invoke(tcs.Task);
-            }, CancellationToken.None, TaskContinuationOptions.None, TaskScheduler.Default);
-            return tcs.Task;
         }
     }
 }

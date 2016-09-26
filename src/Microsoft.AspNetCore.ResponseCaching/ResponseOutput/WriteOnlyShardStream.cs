@@ -4,6 +4,9 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Internal;
 
 namespace Microsoft.AspNetCore.ResponseCaching.Internal
 {
@@ -114,10 +117,38 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             }
         }
 
-        // TODO: this can probably be improved
+        public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            Write(buffer, offset, count);
+            return TaskCache.CompletedTask;
+        }
+
+        // TODO: this can be improved
         public override void WriteByte(byte value)
         {
             Write(new[] { value }, 0, 1);
+        }
+
+#if NETSTANDARD1_3
+        public IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+#else
+        public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+#endif
+        {
+            return StreamUtilities.ToIAsyncResult(WriteAsync(buffer, offset, count), callback, state);
+        }
+
+#if NETSTANDARD1_3
+        public void EndWrite(IAsyncResult asyncResult)
+#else
+        public override void EndWrite(IAsyncResult asyncResult)
+#endif
+        {
+            if (asyncResult == null)
+            {
+                throw new ArgumentNullException(nameof(asyncResult));
+            }
+            ((Task)asyncResult).GetAwaiter().GetResult();
         }
     }
 }

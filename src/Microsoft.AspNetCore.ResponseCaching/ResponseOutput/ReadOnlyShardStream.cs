@@ -85,6 +85,81 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             return bytesRead;
         }
 
+        public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
+        {
+            return Task.FromResult(Read(buffer, offset, count));
+        }
+
+        public override int ReadByte()
+        {
+            if (Position == Length)
+            {
+                return -1;
+            }
+
+            if (_shardOffset == _shards[_shardPosition].Length)
+            {
+                // Move to the next shard
+                _shardPosition++;
+                _shardOffset = 0;
+            }
+            else
+            {
+                _shardOffset++;
+            }
+
+            return _shards[_shardPosition][_shardOffset];
+        }
+
+#if NETSTANDARD1_3
+        public IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+#else
+        public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback callback, object state)
+#endif
+        {
+            var tcs = new TaskCompletionSource<int>(state);
+
+            try
+            {
+                tcs.TrySetResult(Read(buffer, offset, count));
+            }
+            catch (Exception ex)
+            {
+                tcs.TrySetException(ex);
+            }
+
+            if (callback != null)
+            {
+                // Offload callbacks to avoid stack dives on sync completions.
+                var ignored = Task.Run(() =>
+                {
+                    try
+                    {
+                        callback(tcs.Task);
+                    }
+                    catch (Exception)
+                    {
+                        // Suppress exceptions on background threads.
+                    }
+                });
+            }
+
+            return tcs.Task;
+        }
+
+#if NETSTANDARD1_3
+        public int EndRead(IAsyncResult asyncResult)
+#else
+        public override int EndRead(IAsyncResult asyncResult)
+#endif
+        {
+            if (asyncResult == null)
+            {
+                throw new ArgumentNullException(nameof(asyncResult));
+            }
+            return ((Task<int>)asyncResult).GetAwaiter().GetResult();
+        }
+
         public override long Seek(long offset, SeekOrigin origin)
         {
             if (origin == SeekOrigin.Begin)
