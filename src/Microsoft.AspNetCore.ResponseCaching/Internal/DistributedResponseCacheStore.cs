@@ -33,15 +33,6 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             }
         }
 
-        public async Task RemoveAsync(string key)
-        {
-            try
-            {
-                await _cache.RemoveAsync(key);
-            }
-            catch { }
-        }
-
         public async Task SetAsync(string key, IResponseCacheEntry entry, TimeSpan validFor)
         {
             try

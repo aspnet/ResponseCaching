@@ -10,6 +10,5 @@ namespace Microsoft.AspNetCore.ResponseCaching
     {
         Task<IResponseCacheEntry> GetAsync(string key);
         Task SetAsync(string key, IResponseCacheEntry entry, TimeSpan validFor);
-        Task RemoveAsync(string key);
     }
 }

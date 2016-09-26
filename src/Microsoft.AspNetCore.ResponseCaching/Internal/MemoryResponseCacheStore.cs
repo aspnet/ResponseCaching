@@ -51,12 +51,6 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             }
         }
 
-        public Task RemoveAsync(string key)
-        {
-            _cache.Remove(key);
-            return TaskCache.CompletedTask;
-        }
-
         public async Task SetAsync(string key, IResponseCacheEntry entry, TimeSpan validFor)
         {
             if (entry is CachedResponse)
