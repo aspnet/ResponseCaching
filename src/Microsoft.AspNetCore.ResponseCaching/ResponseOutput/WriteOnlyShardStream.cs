@@ -20,6 +20,11 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
         internal WriteOnlyShardStream(int shardSize)
         {
+            if (shardSize <= 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(shardSize), shardSize, $"{nameof(shardSize)} must be greater than 0.");
+            }
+
             _shardSize = shardSize;
         }
 

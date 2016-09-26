@@ -16,6 +16,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         private readonly int _shardSize;
         private int _shardIndex;
         private int _shardOffset;
+        private long _position;
 
         internal ReadOnlyShardStream(List<byte[]> shards, int shardSize, long length)
         {
@@ -41,17 +42,18 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         {
             get
             {
-                return _shardIndex * _shardSize + _shardOffset;
+                return _position;
             }
             set
             {
-                if (value < 0 || value > Length)
+                if (value != 0)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(value), value, $"The Position must be within the length of the Stream: {Length}");
+                    throw new ArgumentOutOfRangeException(nameof(value), value, $"{nameof(Position)} can only be set to 0.");
                 }
 
-                _shardOffset = (int)(value % _shardSize);
-                _shardIndex = (int)(value / _shardSize);
+                _position = 0;
+                _shardOffset = 0;
+                _shardIndex = 0;
             }
         }
 
@@ -87,6 +89,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 Array.Copy(_shards[_shardIndex], _shardOffset, buffer, offset, shardBytesRead);
                 bytesRead += shardBytesRead;
                 _shardOffset += shardBytesRead;
+                _position += shardBytesRead;
                 offset += shardBytesRead;
                 count -= shardBytesRead;
             }
@@ -115,6 +118,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
             var byteRead = _shards[_shardIndex][_shardOffset];
             _shardOffset++;
+            _position++;
 
             return byteRead;
         }
@@ -170,19 +174,16 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
         public override long Seek(long offset, SeekOrigin origin)
         {
-            if (origin == SeekOrigin.Begin)
+            if (origin != SeekOrigin.Begin)
             {
-                Position = offset;
+                throw new ArgumentException(nameof(origin), $"{nameof(Seek)} can only be set to {nameof(SeekOrigin.Begin)}.");
             }
-            else if (origin == SeekOrigin.End)
+            if (offset != 0)
             {
-                Position = Length + offset;
-            }
-            else // if (origin == SeekOrigin.Current)
-            {
-                Position = Position + offset;
+                throw new ArgumentOutOfRangeException(nameof(offset), offset, $"{nameof(Seek)} can only be set to 0.");
             }
 
+            Position = 0;
             return Position;
         }
 
@@ -209,6 +210,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
             for (; _shardIndex < _shards.Count; _shardIndex++, _shardOffset = 0)
             {
+                _position+= _shards[_shardIndex].Length - _shardOffset;
                 await destination.WriteAsync(_shards[_shardIndex], _shardOffset, _shards[_shardIndex].Length - _shardOffset, cancellationToken);
             }
         }

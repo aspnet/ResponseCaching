@@ -198,11 +198,6 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             }
         }
 
-        public Task RemoveAsync(string key)
-        {
-            return TaskCache.CompletedTask;
-        }
-
         public Task SetAsync(string key, IResponseCacheEntry entry, TimeSpan validFor)
         {
             SetCount++;
