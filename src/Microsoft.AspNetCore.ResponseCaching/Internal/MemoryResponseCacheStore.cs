@@ -5,7 +5,6 @@ using System;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Caching.Memory;
-using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Options;
 
 namespace Microsoft.AspNetCore.ResponseCaching.Internal
@@ -27,7 +26,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             }
 
             _cache = cache;
-            _options = options.Value; // TODO: should this be a different option?
+            _options = options.Value;
         }
 
         public Task<IResponseCacheEntry> GetAsync(string key)
@@ -56,7 +55,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             if (entry is CachedResponse)
             {
                 var cachedResponse = (CachedResponse)entry;
-                var shardStream = new WriteOnlyShardStream(_options.BodyBufferShardSize);
+                var shardStream = new WriteOnlyShardStream(_options.BodyShardSize);
                 await cachedResponse.Body.CopyToAsync(shardStream);
 
                 _cache.Set(
@@ -67,7 +66,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                         StatusCode = cachedResponse.StatusCode,
                         Headers = cachedResponse.Headers,
                         Shards = shardStream.Shards,
-                        ShardSize = _options.BodyBufferShardSize,
+                        ShardSize = _options.BodyShardSize,
                         BodyLength = shardStream.Length
                     },
                     new MemoryCacheEntryOptions()

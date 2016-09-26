@@ -533,7 +533,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         {
             var builders = TestUtils.CreateBuildersWithResponseCache(options: new ResponseCacheOptions()
             {
-                MaximumCachedBodySize = 100
+                MaximumBodySize = 100
             });
 
             foreach (var builder in builders)
@@ -554,7 +554,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         {
             var builders = TestUtils.CreateBuildersWithResponseCache(options: new ResponseCacheOptions()
             {
-                MaximumCachedBodySize = 1
+                MaximumBodySize = 1
             });
 
             foreach (var builder in builders)

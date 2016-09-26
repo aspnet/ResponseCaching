@@ -286,7 +286,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
         {
             // Shim response stream
             context.OriginalResponseStream = context.HttpContext.Response.Body;
-            context.ResponseCacheStream = new ResponseCacheStream(context.OriginalResponseStream, _options.MaximumCachedBodySize, _options.BodyBufferShardSize);
+            context.ResponseCacheStream = new ResponseCacheStream(context.OriginalResponseStream, _options.MaximumBodySize, _options.BodyShardSize);
             context.HttpContext.Response.Body = context.ResponseCacheStream;
 
             // Shim IHttpSendFileFeature

@@ -98,13 +98,16 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 throw;
             }
 
-            if (BufferingEnabled && Length + count <= _maxBufferSize)
+            if (BufferingEnabled)
             {
-                _writeOnlyStream.Write(buffer, offset, count);
-            }
-            else
-            {
-                DisableBuffering();
+                if (Length + count > _maxBufferSize)
+                {
+                    DisableBuffering();
+                }
+                else
+                {
+                    _writeOnlyStream.Write(buffer, offset, count);
+                }
             }
         }
 
@@ -120,13 +123,16 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 throw;
             }
 
-            if (BufferingEnabled && Length + count <= _maxBufferSize)
+            if (BufferingEnabled)
             {
-                await _writeOnlyStream.WriteAsync(buffer, offset, count, cancellationToken);
-            }
-            else
-            {
-                DisableBuffering();
+                if (Length + count > _maxBufferSize)
+                {
+                    DisableBuffering();
+                }
+                else
+                {
+                    await _writeOnlyStream.WriteAsync(buffer, offset, count, cancellationToken);
+                }
             }
         }
 
@@ -142,13 +148,16 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 throw;
             }
 
-            if (BufferingEnabled && Length + 1 <= _maxBufferSize)
+            if (BufferingEnabled)
             {
-                _writeOnlyStream.WriteByte(value);
-            }
-            else
-            {
-                DisableBuffering();
+                if (Length + 1 > _maxBufferSize)
+                {
+                    DisableBuffering();
+                }
+                else
+                {
+                    _writeOnlyStream.WriteByte(value);
+                }
             }
         }
 
