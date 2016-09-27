@@ -224,7 +224,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
 
             Assert.Equal(stream.Length, stream.Position);
             Assert.Equal(stream.Length, writeStream.Length);
-            var writeShards = writeStream.Shards;
+            var writeShards = writeStream.GetShards();
             for (var i = 0; i < info.Shards.Count; i++)
             {
                 Assert.True(writeShards[i].SequenceEqual(info.Shards[i]));
@@ -244,7 +244,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
 
             Assert.Equal(stream.Length, stream.Position);
             Assert.Equal(stream.Length - skippedBytes, writeStream.Length);
-            var writeShards = writeStream.Shards;
+            var writeShards = writeStream.GetShards();
 
             for (var i = skippedBytes; i < info.Length; i++)
             {
@@ -275,7 +275,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
 
             Assert.Equal(stream.Length, stream.Position);
             Assert.Equal(stream.Length, writeStream.Length);
-            var writeShards = writeStream.Shards;
+            var writeShards = writeStream.GetShards();
             for (var i = 0; i < info.Shards.Count; i++)
             {
                 Assert.True(writeShards[i].SequenceEqual(info.Shards[i]));

@@ -431,8 +431,8 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             var context = TestUtils.CreateTestContext();
 
             middleware.ShimResponseStream(context);
-            context.HttpContext.Response.ContentLength = 10;
-            await context.HttpContext.Response.WriteAsync(new string('0', 10));
+            context.HttpContext.Response.ContentLength = 20;
+            await context.HttpContext.Response.WriteAsync(new string('0', 20));
 
             context.ShouldCacheResponse = true;
             context.CachedResponse = new CachedResponse();

@@ -12,21 +12,15 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
     public class MemoryResponseCacheStore : IResponseCacheStore
     {
         private readonly IMemoryCache _cache;
-        private readonly ResponseCacheOptions _options;
 
-        public MemoryResponseCacheStore(IMemoryCache cache, IOptions<ResponseCacheOptions> options)
+        public MemoryResponseCacheStore(IMemoryCache cache)
         {
             if (cache == null)
             {
                 throw new ArgumentNullException(nameof(cache));
             }
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
 
             _cache = cache;
-            _options = options.Value;
         }
 
         public Task<IResponseCacheEntry> GetAsync(string key)
@@ -55,7 +49,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             if (entry is CachedResponse)
             {
                 var cachedResponse = (CachedResponse)entry;
-                var shardStream = new WriteOnlyShardStream(_options.BodyShardSize);
+                var shardStream = new WriteOnlyShardStream(StreamUtilities.BodyShardSize);
                 await cachedResponse.Body.CopyToAsync(shardStream);
 
                 _cache.Set(
@@ -65,7 +59,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                         Created = cachedResponse.Created,
                         StatusCode = cachedResponse.StatusCode,
                         Headers = cachedResponse.Headers,
-                        Shards = shardStream.Shards,
+                        Shards = shardStream.GetShards(),
                         BodyLength = shardStream.Length
                     },
                     new MemoryCacheEntryOptions()

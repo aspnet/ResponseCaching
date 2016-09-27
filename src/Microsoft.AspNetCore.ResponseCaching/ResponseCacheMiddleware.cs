@@ -258,12 +258,14 @@ namespace Microsoft.AspNetCore.ResponseCaching
         internal async Task FinalizeCacheBodyAsync(ResponseCacheContext context)
         {
             var contentLength = context.TypedResponseHeaders.ContentLength;
-            if (context.ShouldCacheResponse &&
-                context.ResponseCacheStream.BufferingEnabled &&
-                (!contentLength.HasValue || contentLength == context.ResponseCacheStream.Length))
+            if (context.ShouldCacheResponse && context.ResponseCacheStream.BufferingEnabled)
             {
-                context.CachedResponse.Body = context.ResponseCacheStream.GetShardStream();
-                await _store.SetAsync(context.StorageVaryKey ?? context.BaseKey, context.CachedResponse, context.CachedResponseValidFor);
+                var bufferStream = context.ResponseCacheStream.GetBufferStream();
+                if (!contentLength.HasValue || contentLength == bufferStream.Length)
+                {
+                    context.CachedResponse.Body = bufferStream;
+                    await _store.SetAsync(context.StorageVaryKey ?? context.BaseKey, context.CachedResponse, context.CachedResponseValidFor);
+                }
             }
         }
 
@@ -286,7 +288,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
         {
             // Shim response stream
             context.OriginalResponseStream = context.HttpContext.Response.Body;
-            context.ResponseCacheStream = new ResponseCacheStream(context.OriginalResponseStream, _options.MaximumBodySize, _options.BodyShardSize);
+            context.ResponseCacheStream = new ResponseCacheStream(context.OriginalResponseStream, _options.MaximumBodySize, StreamUtilities.BodyShardSize);
             context.HttpContext.Response.Body = context.ResponseCacheStream;
 
             // Shim IHttpSendFileFeature

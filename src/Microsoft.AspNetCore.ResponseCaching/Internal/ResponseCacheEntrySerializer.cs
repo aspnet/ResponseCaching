@@ -110,14 +110,13 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
             var bodyLength = reader.ReadInt32();
             var bodyBytes = reader.ReadBytes(bodyLength);
-            var body = new List<byte[]>(new[] { bodyBytes });
 
             return new CachedResponse
             {
                 Created = created,
                 StatusCode = statusCode,
                 Headers = headers,
-                Body = new ReadOnlyShardStream(body, bodyLength)
+                Body = new MemoryStream(bodyBytes, writable: false)
             };
         }
 

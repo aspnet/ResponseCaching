@@ -29,17 +29,14 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         }
 
         // Extracting the buffered shards closes the stream for writing
-        internal List<byte[]> Shards
+        internal List<byte[]> GetShards()
         {
-            get
+            if (!_shardsExtracted)
             {
-                if (!_shardsExtracted)
-                {
-                    _shardsExtracted = true;
-                    FinalizeShards();
-                }
-                return _shards;
+                _shardsExtracted = true;
+                FinalizeShards();
             }
+            return _shards;
         }
 
         public override bool CanRead => false;
@@ -79,6 +76,10 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
         public override void Flush()
         {
+            if (!CanWrite)
+            {
+                throw new ObjectDisposedException("The stream has been closed for writing.");
+            }
         }
 
         public override int Read(byte[] buffer, int offset, int count)
@@ -98,9 +99,25 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
         public override void Write(byte[] buffer, int offset, int count)
         {
+            if (buffer == null)
+            {
+                throw new ArgumentNullException(nameof(buffer));
+            }
+            if (offset < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(offset), offset, "Non-negative number required.");
+            }
+            if (count < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(count), count, "Non-negative number required.");
+            }
+            if (buffer.Length < offset + count)
+            {
+                throw new ArgumentException("Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.");
+            }
             if (!CanWrite)
             {
-                throw new InvalidOperationException("The stream has been closed for writing.");
+                throw new ObjectDisposedException("The stream has been closed for writing.");
             }
 
             while (count > 0)
@@ -130,7 +147,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         {
             if (!CanWrite)
             {
-                throw new InvalidOperationException("The stream has been closed for writing.");
+                throw new ObjectDisposedException("The stream has been closed for writing.");
             }
 
             if ((int)_bufferStream.Length == _shardSize)

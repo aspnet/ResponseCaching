@@ -7,8 +7,13 @@ using System.Threading.Tasks;
 
 namespace Microsoft.AspNetCore.ResponseCaching.Internal
 {
-    public class StreamUtilities
+    internal static class StreamUtilities
     {
+        /// <summary>
+        /// The shard size for buffering the response body in bytes. The default is set to 84 KB.
+        /// </summary>
+        internal static int BodyShardSize { get; set; } = 84 * 1024;
+
         internal static IAsyncResult ToIAsyncResult(Task task, AsyncCallback callback, object state)
         {
             var tcs = new TaskCompletionSource<int>(state);

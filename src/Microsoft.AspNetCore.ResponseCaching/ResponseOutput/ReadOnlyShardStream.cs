@@ -44,6 +44,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             }
             set
             {
+                // The stream only supports a full rewind. This will need an update if random access becomes a required feature.
                 if (value != 0)
                 {
                     throw new ArgumentOutOfRangeException(nameof(value), value, $"{nameof(Position)} can only be set to 0.");
@@ -62,6 +63,23 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
         public override int Read(byte[] buffer, int offset, int count)
         {
+            if (buffer == null)
+            {
+                throw new ArgumentNullException(nameof(buffer));
+            }
+            if (offset < 0)
+            {
+                throw new ArgumentOutOfRangeException(nameof(offset), offset, "Non-negative number required.");
+            }
+            if (count < 0 )
+            {
+                throw new ArgumentOutOfRangeException(nameof(count), count, "Non-negative number required.");
+            }
+            if (buffer.Length < offset + count)
+            {
+                throw new ArgumentException("Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.");
+            }
+
             if (_shardIndex == _shards.Count)
             {
                 return 0;
@@ -84,7 +102,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
                 // Read up to the end of the shard
                 var shardBytesRead = Math.Min(count, _shards[_shardIndex].Length - _shardOffset);
-                Array.Copy(_shards[_shardIndex], _shardOffset, buffer, offset, shardBytesRead);
+                Buffer.BlockCopy(_shards[_shardIndex], _shardOffset, buffer, offset, shardBytesRead);
                 bytesRead += shardBytesRead;
                 _shardOffset += shardBytesRead;
                 _position += shardBytesRead;
@@ -172,6 +190,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
         public override long Seek(long offset, SeekOrigin origin)
         {
+            // The stream only supports a full rewind. This will need an update if random access becomes a required feature.
             if (origin != SeekOrigin.Begin)
             {
                 throw new ArgumentException(nameof(origin), $"{nameof(Seek)} can only be set to {nameof(SeekOrigin.Begin)}.");
@@ -208,8 +227,10 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
             for (; _shardIndex < _shards.Count; _shardIndex++, _shardOffset = 0)
             {
-                _position+= _shards[_shardIndex].Length - _shardOffset;
-                await destination.WriteAsync(_shards[_shardIndex], _shardOffset, _shards[_shardIndex].Length - _shardOffset, cancellationToken);
+                cancellationToken.ThrowIfCancellationRequested();
+                var bytesCopied = _shards[_shardIndex].Length - _shardOffset;
+                await destination.WriteAsync(_shards[_shardIndex], _shardOffset, bytesCopied, cancellationToken);
+                _position += bytesCopied;
             }
         }
     }

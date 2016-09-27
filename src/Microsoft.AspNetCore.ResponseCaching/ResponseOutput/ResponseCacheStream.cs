@@ -14,7 +14,6 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         private readonly long _maxBufferSize;
         private readonly int _shardSize;
         private WriteOnlyShardStream _writeOnlyStream;
-        private ReadOnlyShardStream _readOnlyStream;
 
         internal ResponseCacheStream(Stream innerStream, long maxBufferSize, int shardSize)
         {
@@ -32,7 +31,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
         public override bool CanWrite => _innerStream.CanWrite;
 
-        public override long Length => _writeOnlyStream.Length;
+        public override long Length => _innerStream.Length;
 
         public override long Position
         {
@@ -44,16 +43,13 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             }
         }
 
-        internal Stream GetShardStream()
+        internal Stream GetBufferStream()
         {
-            if (_readOnlyStream == null)
+            if (!BufferingEnabled)
             {
-                _readOnlyStream = new ReadOnlyShardStream(_writeOnlyStream.Shards, _writeOnlyStream.Length);
-
-                // TODO: clean up the write stream
-                _writeOnlyStream = null;
+                throw new InvalidOperationException("Buffer stream cannot be retrieved since buffering is disabled.");
             }
-            return _readOnlyStream;
+            return new ReadOnlyShardStream(_writeOnlyStream.GetShards(), _writeOnlyStream.Length);
         }
 
         internal void DisableBuffering()
@@ -100,7 +96,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
             if (BufferingEnabled)
             {
-                if (Length + count > _maxBufferSize)
+                if (_writeOnlyStream.Length + count > _maxBufferSize)
                 {
                     DisableBuffering();
                 }
@@ -125,7 +121,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
             if (BufferingEnabled)
             {
-                if (Length + count > _maxBufferSize)
+                if (_writeOnlyStream.Length + count > _maxBufferSize)
                 {
                     DisableBuffering();
                 }
@@ -150,7 +146,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
             if (BufferingEnabled)
             {
-                if (Length + 1 > _maxBufferSize)
+                if (_writeOnlyStream.Length + 1 > _maxBufferSize)
                 {
                     DisableBuffering();
                 }

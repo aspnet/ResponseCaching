@@ -9,12 +9,6 @@ namespace Microsoft.AspNetCore.Builder
     public class ResponseCacheOptions
     {
         /// <summary>
-        /// The shard size for buffering the response body in bytes. The default is set to 80 KB.
-        /// </summary>
-        // TODO: Setting to 10 for testing, 80 KB is more reasonable.
-        public int BodyShardSize { get; set; } = 10;
-
-        /// <summary>
         /// The largest cacheable size for the response body in bytes. The default is set to 1 MB.
         /// </summary>
         public long MaximumBodySize { get; set; } = 1024 * 1024;

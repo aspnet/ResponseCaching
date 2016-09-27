@@ -40,7 +40,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             var stream = new WriteOnlyShardStream(1);
 
             Assert.True(stream.CanWrite);
-            Assert.Equal(0, stream.Shards.Count);
+            Assert.Equal(0, stream.GetShards().Count);
             Assert.False(stream.CanWrite);
         }
 
@@ -56,7 +56,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             {
                 stream.WriteByte(datum);
             }
-            var shards = stream.Shards;
+            var shards = stream.GetShards();
 
             Assert.Equal(WriteData.Length, stream.Length);
             Assert.Equal((WriteData.Length + shardSize - 1)/ shardSize, shards.Count);
@@ -90,7 +90,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             {
                 stream.Write(WriteData, i, Math.Min(writeSize, WriteData.Length - i));
             }
-            var shards = stream.Shards;
+            var shards = stream.GetShards();
 
             Assert.Equal(WriteData.Length, stream.Length);
             Assert.Equal((WriteData.Length + shardSize - 1) / shardSize, shards.Count);

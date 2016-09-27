@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.ResponseCaching.Internal;
@@ -165,8 +166,15 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             {
                 Assert.Equal(expectedHeader.Value, actual.Headers[expectedHeader.Key]);
             }
+
             Assert.Equal(expected.Body.Length, actual.Body.Length);
-            Assert.Equal(expected.Body.ToString(), actual.Body.ToString());
+            var bodyLength = (int)expected.Body.Length;
+            var expectedBytes = new byte[bodyLength];
+            var actualBytes = new byte[bodyLength];
+            expected.Body.Position = 0; // Rewind
+            Assert.Equal(bodyLength, expected.Body.Read(expectedBytes, 0, bodyLength));
+            Assert.Equal(bodyLength, actual.Body.Read(actualBytes, 0, bodyLength));
+            Assert.True(expectedBytes.SequenceEqual(actualBytes));
         }
 
         private static void AssertCachedVaryByRuleEqual(CachedVaryByRules expected, CachedVaryByRules actual)

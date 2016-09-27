@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.ResponseCaching.Internal;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.ObjectPool;
@@ -20,6 +21,12 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
 {
     internal class TestUtils
     {
+        static TestUtils()
+        {
+            // Force sharding in tests
+            StreamUtilities.BodyShardSize = 10;
+        }
+
         internal static RequestDelegate TestRequestDelegate = async (context) =>
         {
             var uniqueId = Guid.NewGuid().ToString();
