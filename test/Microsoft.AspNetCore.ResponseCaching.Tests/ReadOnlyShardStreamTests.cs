@@ -251,5 +251,35 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
                 Assert.Equal(info.Shards[i / info.ShardSize][i % info.ShardSize], writeShards[0][i - skippedBytes]);
             }
         }
+
+        [Theory]
+        [MemberData(nameof(TestStreams))]
+        public void CopyToAsync_CopiesFromStart_AfterReset(TestStreamInitInfo info)
+        {
+            var skippedBytes = info.ShardSize;
+            var writeStream = new WriteOnlyShardStream(info.ShardSize);
+            var stream = new ReadOnlyShardStream(info.Shards, info.Length);
+            stream.Read(new byte[skippedBytes], 0, skippedBytes);
+
+            stream.CopyTo(writeStream);
+
+            // Assert bytes read from current location to the end
+            Assert.Equal(stream.Length, stream.Position);
+            Assert.Equal(stream.Length - skippedBytes, writeStream.Length);
+
+            // Reset
+            stream.Position = 0;
+            writeStream = new WriteOnlyShardStream(info.ShardSize);
+
+            stream.CopyTo(writeStream);
+
+            Assert.Equal(stream.Length, stream.Position);
+            Assert.Equal(stream.Length, writeStream.Length);
+            var writeShards = writeStream.Shards;
+            for (var i = 0; i < info.Shards.Count; i++)
+            {
+                Assert.True(writeShards[i].SequenceEqual(info.Shards[i]));
+            }
+        }
     }
 }
