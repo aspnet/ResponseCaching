@@ -3,9 +3,10 @@
 
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using Microsoft.AspNetCore.ResponseCaching.Internal;
 using Xunit;
-using System.Linq;
 
 namespace Microsoft.AspNetCore.ResponseCaching.Tests
 {
@@ -56,6 +57,69 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         public void ReadOnlyShardStream_NullShards_Throws()
         {
             Assert.Throws<ArgumentNullException>(() => new ReadOnlyShardStream(null, 0));
+        }
+
+        [Fact]
+        public void Position_ResetToZero_Succeeds()
+        {
+            var stream = new ReadOnlyShardStream(new List<byte[]>(), 0);
+
+            // This should not throw
+            stream.Position = 0;
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(-1)]
+        [InlineData(100)]
+        [InlineData(long.MaxValue)]
+        [InlineData(long.MinValue)]
+        public void Position_SetToNonZero_Throws(long position)
+        {
+            var stream = new ReadOnlyShardStream(new List<byte[]>(new[] { new byte[100] }), 100);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => stream.Position = position);
+        }
+
+        [Fact]
+        public void WriteOperations_Throws()
+        {
+            var stream = new ReadOnlyShardStream(new List<byte[]>(), 0);
+
+
+            Assert.Throws<NotSupportedException>(() => stream.Flush());
+            Assert.Throws<NotSupportedException>(() => stream.Write(new byte[1], 0, 0));
+        }
+
+        [Fact]
+        public void SetLength_Throws()
+        {
+            var stream = new ReadOnlyShardStream(new List<byte[]>(), 0);
+
+            Assert.Throws<NotSupportedException>(() => stream.SetLength(0));
+        }
+
+        [Theory]
+        [InlineData(SeekOrigin.Current)]
+        [InlineData(SeekOrigin.End)]
+        public void Seek_NotBegin_Throws(SeekOrigin origin)
+        {
+            var stream = new ReadOnlyShardStream(new List<byte[]>(), 0);
+
+            Assert.Throws<ArgumentException>(() => stream.Seek(0, origin));
+        }
+
+        [Theory]
+        [InlineData(1)]
+        [InlineData(-1)]
+        [InlineData(100)]
+        [InlineData(long.MaxValue)]
+        [InlineData(long.MinValue)]
+        public void Seek_NotZero_Throws(long offset)
+        {
+            var stream = new ReadOnlyShardStream(new List<byte[]>(), 0);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => stream.Seek(offset, SeekOrigin.Begin));
         }
 
         [Theory]
@@ -149,7 +213,6 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             Assert.Equal(stream.Length, stream.Position);
         }
 
-
         [Theory]
         [MemberData(nameof(TestStreams))]
         public void CopyToAsync_CopiesAllBytes(TestStreamInitInfo info)
@@ -165,6 +228,27 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             for (var i = 0; i < info.Shards.Count; i++)
             {
                 Assert.True(writeShards[i].SequenceEqual(info.Shards[i]));
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TestStreams))]
+        public void CopyToAsync_CopiesFromCurrentPosition(TestStreamInitInfo info)
+        {
+            var skippedBytes = info.ShardSize;
+            var writeStream = new WriteOnlyShardStream((int)info.Length);
+            var stream = new ReadOnlyShardStream(info.Shards, info.Length);
+            stream.Read(new byte[skippedBytes], 0, skippedBytes);
+
+            stream.CopyTo(writeStream);
+
+            Assert.Equal(stream.Length, stream.Position);
+            Assert.Equal(stream.Length - skippedBytes, writeStream.Length);
+            var writeShards = writeStream.Shards;
+
+            for (var i = skippedBytes; i < info.Length; i++)
+            {
+                Assert.Equal(info.Shards[i / info.ShardSize][i % info.ShardSize], writeShards[0][i - skippedBytes]);
             }
         }
     }

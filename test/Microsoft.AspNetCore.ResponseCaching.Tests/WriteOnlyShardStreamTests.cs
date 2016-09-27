@@ -2,6 +2,7 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
+using System.IO;
 using System.Linq;
 using Microsoft.AspNetCore.ResponseCaching.Internal;
 using Xunit;
@@ -21,6 +22,16 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         public void WriteOnlyShardStream_InvalidShardSize_Throws(int shardSize)
         {
             Assert.Throws<ArgumentOutOfRangeException>(() => new WriteOnlyShardStream(shardSize));
+        }
+
+        [Fact]
+        public void ReadAndSeekOperations_Throws()
+        {
+            var stream = new WriteOnlyShardStream(1);
+
+            Assert.Throws<NotSupportedException>(() => stream.Read(new byte[1], 0, 0));
+            Assert.Throws<NotSupportedException>(() => stream.Position = 0);
+            Assert.Throws<NotSupportedException>(() => stream.Seek(0, SeekOrigin.Begin));
         }
 
         [Fact]
