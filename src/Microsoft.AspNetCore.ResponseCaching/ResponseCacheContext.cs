@@ -42,7 +42,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
 
         internal string BaseKey { get;  set; }
 
-        internal string StorageVaryKey { get;  set; }
+        internal string VaryKey { get;  set; }
 
         internal TimeSpan CachedResponseValidFor { get;  set; }
 

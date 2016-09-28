@@ -14,7 +14,6 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.ObjectPool;
 using Microsoft.Extensions.Options;
-using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
 
 namespace Microsoft.AspNetCore.ResponseCaching.Tests
@@ -41,14 +40,14 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             await context.Response.WriteAsync(uniqueId);
         };
 
-        internal static IResponseCacheKeyProvider CreateTestKeyProvider()
+        internal static ResponseCacheKeyProvider CreateTestKeyProvider()
         {
             return CreateTestKeyProvider(new ResponseCacheOptions());
         }
 
-        internal static IResponseCacheKeyProvider CreateTestKeyProvider(ResponseCacheOptions options)
+        internal static ResponseCacheKeyProvider CreateTestKeyProvider(ResponseCacheOptions options)
         {
-            return new ResponseCacheKeyProvider(new DefaultObjectPoolProvider(), Options.Create(options));
+            return new ResponseCacheKeyProvider(new DefaultObjectPoolProvider(), options);
         }
 
         internal static IEnumerable<IWebHostBuilder> CreateBuildersWithResponseCache(
@@ -99,7 +98,6 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         internal static ResponseCacheMiddleware CreateTestMiddleware(
             IResponseCacheStore store = null,
             ResponseCacheOptions options = null,
-            IResponseCacheKeyProvider keyProvider = null,
             IResponseCachePolicyProvider policyProvider = null)
         {
             if (store == null)
@@ -109,10 +107,6 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             if (options == null)
             {
                 options = new ResponseCacheOptions();
-            }
-            if (keyProvider == null)
-            {
-                keyProvider = new ResponseCacheKeyProvider(new DefaultObjectPoolProvider(), Options.Create(options));
             }
             if (policyProvider == null)
             {
@@ -124,7 +118,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
                 store,
                 Options.Create(options),
                 policyProvider,
-                keyProvider);
+                new DefaultObjectPoolProvider());
         }
 
         internal static ResponseCacheContext CreateTestContext()
@@ -153,42 +147,9 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         public bool IsResponseCacheable(ResponseCacheContext context) => true;
     }
 
-    internal class TestResponseCacheKeyProvider : IResponseCacheKeyProvider
-    {
-        private readonly string _baseKey;
-        private readonly StringValues _varyKey;
-
-        public TestResponseCacheKeyProvider(string lookupBaseKey = null, StringValues? lookupVaryKey = null)
-        {
-            _baseKey = lookupBaseKey;
-            if (lookupVaryKey.HasValue)
-            {
-                _varyKey = lookupVaryKey.Value;
-            }
-        }
-
-        public IEnumerable<string> CreateLookupVaryByKeys(ResponseCacheContext context)
-        {
-            foreach (var varyKey in _varyKey)
-            {
-                yield return _baseKey + varyKey;
-            }
-        }
-
-        public string CreateBaseKey(ResponseCacheContext context)
-        {
-            return _baseKey;
-        }
-
-        public string CreateStorageVaryByKey(ResponseCacheContext context)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
     internal class TestResponseCacheStore : IResponseCacheStore
     {
-        private readonly IDictionary<string, IResponseCacheEntry> _storage = new Dictionary<string, IResponseCacheEntry>();
+        private readonly IDictionary<string, IResponseCacheEntry> _store = new Dictionary<string, IResponseCacheEntry>();
         public int GetCount { get; private set; }
         public int SetCount { get; private set; }
 
@@ -197,7 +158,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             GetCount++;
             try
             {
-                return Task.FromResult(_storage[key]);
+                return Task.FromResult(_store[key]);
             }
             catch
             {
@@ -208,7 +169,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         public Task SetAsync(string key, IResponseCacheEntry entry, TimeSpan validFor)
         {
             SetCount++;
-            _storage[key] = entry;
+            _store[key] = entry;
             return TaskCache.CompletedTask;
         }
     }

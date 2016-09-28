@@ -10,6 +10,7 @@ using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Http.Headers;
 using Microsoft.AspNetCore.ResponseCaching.Internal;
 using Microsoft.Extensions.Internal;
+using Microsoft.Extensions.ObjectPool;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 using Microsoft.Net.Http.Headers;
@@ -24,7 +25,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
         private readonly IResponseCacheStore _store;
         private readonly ResponseCacheOptions _options;
         private readonly IResponseCachePolicyProvider _policyProvider;
-        private readonly IResponseCacheKeyProvider _keyProvider;
+        private readonly ResponseCacheKeyProvider _keyProvider;
         private readonly Func<object, Task> _onStartingCallback;
 
         public ResponseCacheMiddleware(
@@ -32,7 +33,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
             IResponseCacheStore store,
             IOptions<ResponseCacheOptions> options,
             IResponseCachePolicyProvider policyProvider,
-            IResponseCacheKeyProvider keyProvider)
+            ObjectPoolProvider poolProvider)
         {
             if (next == null)
             {
@@ -50,16 +51,16 @@ namespace Microsoft.AspNetCore.ResponseCaching
             {
                 throw new ArgumentNullException(nameof(policyProvider));
             }
-            if (keyProvider == null)
+            if (poolProvider == null)
             {
-                throw new ArgumentNullException(nameof(keyProvider));
+                throw new ArgumentNullException(nameof(poolProvider));
             }
 
             _next = next;
             _store = store;
             _options = options.Value;
             _policyProvider = policyProvider;
-            _keyProvider = keyProvider;
+            _keyProvider = new ResponseCacheKeyProvider(poolProvider, _options);
             _onStartingCallback = state => OnResponseStartingAsync((ResponseCacheContext)state);
         }
 
@@ -164,20 +165,12 @@ namespace Microsoft.AspNetCore.ResponseCaching
 
             if (cacheEntry is CachedVaryByRules)
             {
-                // Request contains vary rules, recompute key(s) and try again
+                // Request contains vary rules, recompute key and try again
                 context.CachedVaryByRules = (CachedVaryByRules)cacheEntry;
-
-                foreach (var varyKey in _keyProvider.CreateLookupVaryByKeys(context))
-                {
-                    cacheEntry = await _store.GetAsync(varyKey);
-
-                    if (cacheEntry is CachedResponse && await TryServeCachedResponseAsync(context, (CachedResponse)cacheEntry))
-                    {
-                        return true;
-                    }
-                }
+                cacheEntry = await _store.GetAsync(_keyProvider.CreateVaryByKey(context));
             }
-            else if (cacheEntry is CachedResponse && await TryServeCachedResponseAsync(context, (CachedResponse)cacheEntry))
+
+            if (cacheEntry is CachedResponse && await TryServeCachedResponseAsync(context, (CachedResponse)cacheEntry))
             {
                 return true;
             }
@@ -230,7 +223,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
                     // Always overwrite the CachedVaryByRules to update the expiry information
                     await _store.SetAsync(context.BaseKey, context.CachedVaryByRules, context.CachedResponseValidFor);
 
-                    context.StorageVaryKey = _keyProvider.CreateStorageVaryByKey(context);
+                    context.VaryKey = _keyProvider.CreateVaryByKey(context);
                 }
 
                 // Ensure date header is set
@@ -271,7 +264,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
                 if (!contentLength.HasValue || contentLength == bufferStream.Length)
                 {
                     context.CachedResponse.Body = bufferStream;
-                    await _store.SetAsync(context.StorageVaryKey ?? context.BaseKey, context.CachedResponse, context.CachedResponseValidFor);
+                    await _store.SetAsync(context.VaryKey ?? context.BaseKey, context.CachedResponse, context.CachedResponseValidFor);
                 }
             }
         }
