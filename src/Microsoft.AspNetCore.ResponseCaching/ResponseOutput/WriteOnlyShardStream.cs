@@ -16,7 +16,8 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         private readonly MemoryStream _bufferStream = new MemoryStream();
         private readonly int _shardSize;
         private long _length;
-        private bool _shardsExtracted;
+        private bool _canWrite = true;
+        private bool _disposed;
 
         internal WriteOnlyShardStream(int shardSize)
         {
@@ -31,9 +32,9 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         // Extracting the buffered shards closes the stream for writing
         internal List<byte[]> GetShards()
         {
-            if (!_shardsExtracted)
+            if (_canWrite)
             {
-                _shardsExtracted = true;
+                _canWrite = false;
                 FinalizeShards();
             }
             return _shards;
@@ -43,7 +44,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
         public override bool CanSeek => false;
 
-        public override bool CanWrite => !_shardsExtracted;
+        public override bool CanWrite => _canWrite;
 
         public override long Length => _length;
 
@@ -59,6 +60,14 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             }
         }
 
+        private void DisposeMemoryStream()
+        {
+            // Clean up the memory stream
+            _bufferStream.SetLength(0);
+            _bufferStream.Capacity = 0;
+            _bufferStream.Dispose();
+        }
+
         private void FinalizeShards()
         {
             // Append any remaining shards
@@ -68,10 +77,31 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 _shards.Add(_bufferStream.ToArray());
             }
 
-            // Clean up the memory stream
-            _bufferStream.SetLength(0);
-            _bufferStream.Capacity = 0;
-            _bufferStream.Dispose();
+            DisposeMemoryStream();
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            try
+            {
+                if (_disposed)
+                {
+                    return;
+                }
+
+                if (disposing)
+                {
+                    _shards.Clear();
+                    DisposeMemoryStream();
+                }
+
+                _disposed = true;
+                _canWrite = false;
+            }
+            finally
+            {
+                base.Dispose(disposing);
+            }
         }
 
         public override void Flush()

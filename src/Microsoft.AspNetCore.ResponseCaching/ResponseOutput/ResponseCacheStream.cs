@@ -55,9 +55,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         internal void DisableBuffering()
         {
             BufferingEnabled = false;
-
-            // TODO: clean up the write stream
-            _writeOnlyStream = null;
+            _writeOnlyStream.Dispose();
         }
 
         public override void SetLength(long value)

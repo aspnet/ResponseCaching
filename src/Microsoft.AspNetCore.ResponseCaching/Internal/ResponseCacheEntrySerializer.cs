@@ -2,7 +2,6 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using Microsoft.AspNetCore.Http;
 
@@ -193,11 +192,40 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 }
             }
 
-            var bodyLength = (int)entry.Body.Length;
-            var bodyBytes = new byte[bodyLength];
-            entry.Body.Read(bodyBytes, 0, bodyLength);
-            writer.Write(bodyLength);
-            writer.Write(bodyBytes);
+            if (entry.Body.CanSeek)
+            {
+                if (entry.Body.Length > int.MaxValue)
+                {
+                    throw new NotSupportedException($"{nameof(entry.Body)} is too large to serialized.");
+                }
+
+                var bodyLength = (int)entry.Body.Length;
+                var bodyBytes = new byte[bodyLength];
+                var bytesRead = entry.Body.Read(bodyBytes, 0, bodyLength);
+
+                if (bytesRead != bodyLength)
+                {
+                    throw new InvalidOperationException($"Failed to fully read {nameof(entry.Body)}.");
+                }
+
+                writer.Write(bodyLength);
+                writer.Write(bodyBytes);
+            }
+            else
+            {
+                var stream = new MemoryStream();
+                entry.Body.CopyTo(stream);
+
+                if (stream.Length > int.MaxValue)
+                {
+                    throw new NotSupportedException($"{nameof(entry.Body)} is too large to serialized.");
+                }
+
+                var bodyLength = (int)stream.Length;
+                writer.Write(bodyLength);
+                writer.Write(stream.ToArray());
+
+            }
         }
 
         // See serialization format above

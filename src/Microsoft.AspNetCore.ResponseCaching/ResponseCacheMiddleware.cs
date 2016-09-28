@@ -140,7 +140,14 @@ namespace Microsoft.AspNetCore.ResponseCaching
                             response.ContentLength = body.Length;
                         }
 
-                        await body.CopyToAsync(response.Body);
+                        try
+                        {
+                            await body.CopyToAsync(response.Body, StreamUtilities.BodyShardSize, context.HttpContext.RequestAborted);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            context.HttpContext.Abort();
+                        }
                     }
                 }
 
