@@ -6,7 +6,6 @@ using System.Linq;
 using System.Text;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.ObjectPool;
-using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.AspNetCore.ResponseCaching.Internal
@@ -19,7 +18,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         private readonly ObjectPool<StringBuilder> _builderPool;
         private readonly ResponseCacheOptions _options;
 
-        public ResponseCacheKeyProvider(ObjectPoolProvider poolProvider, IOptions<ResponseCacheOptions> options)
+        public ResponseCacheKeyProvider(ObjectPoolProvider poolProvider, ResponseCacheOptions options)
         {
             if (poolProvider == null)
             {
@@ -31,7 +30,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             }
 
             _builderPool = poolProvider.CreateStringBuilderPool();
-            _options = options.Value;
+            _options = options;
         }
 
         // GET<delimiter>/PATH

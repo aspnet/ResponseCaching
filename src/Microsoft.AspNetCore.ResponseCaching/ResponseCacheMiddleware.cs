@@ -60,7 +60,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
             _store = store;
             _options = options.Value;
             _policyProvider = policyProvider;
-            _keyProvider = new ResponseCacheKeyProvider(poolProvider, options);
+            _keyProvider = new ResponseCacheKeyProvider(poolProvider, _options);
             _onStartingCallback = state => OnResponseStartingAsync((ResponseCacheContext)state);
         }
 

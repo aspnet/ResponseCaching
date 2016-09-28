@@ -47,7 +47,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
 
         internal static ResponseCacheKeyProvider CreateTestKeyProvider(ResponseCacheOptions options)
         {
-            return new ResponseCacheKeyProvider(new DefaultObjectPoolProvider(), Options.Create(options));
+            return new ResponseCacheKeyProvider(new DefaultObjectPoolProvider(), options);
         }
 
         internal static IEnumerable<IWebHostBuilder> CreateBuildersWithResponseCache(
