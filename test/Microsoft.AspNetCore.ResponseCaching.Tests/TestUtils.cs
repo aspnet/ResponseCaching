@@ -149,7 +149,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
 
     internal class TestResponseCacheStore : IResponseCacheStore
     {
-        private readonly IDictionary<string, IResponseCacheEntry> _storage = new Dictionary<string, IResponseCacheEntry>();
+        private readonly IDictionary<string, IResponseCacheEntry> _store = new Dictionary<string, IResponseCacheEntry>();
         public int GetCount { get; private set; }
         public int SetCount { get; private set; }
 
@@ -158,7 +158,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             GetCount++;
             try
             {
-                return Task.FromResult(_storage[key]);
+                return Task.FromResult(_store[key]);
             }
             catch
             {
@@ -169,7 +169,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         public Task SetAsync(string key, IResponseCacheEntry entry, TimeSpan validFor)
         {
             SetCount++;
-            _storage[key] = entry;
+            _store[key] = entry;
             return TaskCache.CompletedTask;
         }
     }

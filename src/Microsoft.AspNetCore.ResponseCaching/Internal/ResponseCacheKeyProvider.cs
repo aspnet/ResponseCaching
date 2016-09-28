@@ -18,7 +18,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         private readonly ObjectPool<StringBuilder> _builderPool;
         private readonly ResponseCacheOptions _options;
 
-        public ResponseCacheKeyProvider(ObjectPoolProvider poolProvider, ResponseCacheOptions options)
+        internal ResponseCacheKeyProvider(ObjectPoolProvider poolProvider, ResponseCacheOptions options)
         {
             if (poolProvider == null)
             {
@@ -34,7 +34,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         }
 
         // GET<delimiter>/PATH
-        public string CreateBaseKey(ResponseCacheContext context)
+        internal string CreateBaseKey(ResponseCacheContext context)
         {
             if (context == null)
             {
@@ -60,7 +60,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         }
 
         // BaseKey<delimiter>H<delimiter>HeaderName=HeaderValue<delimiter>Q<delimiter>QueryName=QueryValue
-        public string CreateStorageVaryByKey(ResponseCacheContext context)
+        internal string CreateVaryByKey(ResponseCacheContext context)
         {
             if (context == null)
             {

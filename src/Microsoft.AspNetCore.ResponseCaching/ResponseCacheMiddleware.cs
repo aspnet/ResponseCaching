@@ -167,7 +167,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
             {
                 // Request contains vary rules, recompute key and try again
                 context.CachedVaryByRules = (CachedVaryByRules)cacheEntry;
-                cacheEntry = await _store.GetAsync(_keyProvider.CreateStorageVaryByKey(context));
+                cacheEntry = await _store.GetAsync(_keyProvider.CreateVaryByKey(context));
             }
 
             if (cacheEntry is CachedResponse && await TryServeCachedResponseAsync(context, (CachedResponse)cacheEntry))
@@ -223,7 +223,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
                     // Always overwrite the CachedVaryByRules to update the expiry information
                     await _store.SetAsync(context.BaseKey, context.CachedVaryByRules, context.CachedResponseValidFor);
 
-                    context.StorageVaryKey = _keyProvider.CreateStorageVaryByKey(context);
+                    context.VaryKey = _keyProvider.CreateVaryByKey(context);
                 }
 
                 // Ensure date header is set
@@ -264,7 +264,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
                 if (!contentLength.HasValue || contentLength == bufferStream.Length)
                 {
                     context.CachedResponse.Body = bufferStream;
-                    await _store.SetAsync(context.StorageVaryKey ?? context.BaseKey, context.CachedResponse, context.CachedResponseValidFor);
+                    await _store.SetAsync(context.VaryKey ?? context.BaseKey, context.CachedResponse, context.CachedResponseValidFor);
                 }
             }
         }
