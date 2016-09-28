@@ -16,7 +16,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         private readonly MemoryStream _bufferStream = new MemoryStream();
         private readonly int _shardSize;
         private long _length;
-        private bool _canWrite = true;
+        private bool _closed;
         private bool _disposed;
 
         internal WriteOnlyShardStream(int shardSize)
@@ -32,9 +32,9 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         // Extracting the buffered shards closes the stream for writing
         internal List<byte[]> GetShards()
         {
-            if (_canWrite)
+            if (!_closed)
             {
-                _canWrite = false;
+                _closed = true;
                 FinalizeShards();
             }
             return _shards;
@@ -44,7 +44,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
         public override bool CanSeek => false;
 
-        public override bool CanWrite => _canWrite;
+        public override bool CanWrite => !_closed;
 
         public override long Length => _length;
 
@@ -96,7 +96,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 }
 
                 _disposed = true;
-                _canWrite = false;
+                _closed = true;
             }
             finally
             {
@@ -152,7 +152,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
             while (count > 0)
             {
-                if ((int)_bufferStream.Length == _shardSize)
+                if (_bufferStream.Length == _shardSize)
                 {
                     _shards.Add(_bufferStream.ToArray());
                     _bufferStream.SetLength(0);
@@ -180,7 +180,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 throw new ObjectDisposedException("The stream has been closed for writing.");
             }
 
-            if ((int)_bufferStream.Length == _shardSize)
+            if (_bufferStream.Length == _shardSize)
             {
                 _shards.Add(_bufferStream.ToArray());
                 _bufferStream.SetLength(0);
