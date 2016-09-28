@@ -9,7 +9,7 @@ using Xunit;
 
 namespace Microsoft.AspNetCore.ResponseCaching.Tests
 {
-    public class WriteOnlySegmentStreamTests
+    public class SegmentWriteStreamTests
     {
         private static byte[] WriteData = new byte[]
         {
@@ -19,15 +19,15 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         [Theory]
         [InlineData(0)]
         [InlineData(-1)]
-        public void WriteOnlySegmentStream_InvalidSegmentSize_Throws(int segmentSize)
+        public void SegmentWriteStream_InvalidSegmentSize_Throws(int segmentSize)
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new WriteOnlySegmentStream(segmentSize));
+            Assert.Throws<ArgumentOutOfRangeException>(() => new SegmentWriteStream(segmentSize));
         }
 
         [Fact]
         public void ReadAndSeekOperations_Throws()
         {
-            var stream = new WriteOnlySegmentStream(1);
+            var stream = new SegmentWriteStream(1);
 
             Assert.Throws<NotSupportedException>(() => stream.Read(new byte[1], 0, 0));
             Assert.Throws<NotSupportedException>(() => stream.Position = 0);
@@ -37,7 +37,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         [Fact]
         public void GetSegments_ExtractionDisablesWriting()
         {
-            var stream = new WriteOnlySegmentStream(1);
+            var stream = new SegmentWriteStream(1);
 
             Assert.True(stream.CanWrite);
             Assert.Equal(0, stream.GetSegments().Count);
@@ -50,7 +50,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         [InlineData(6)]
         public void WriteByte_CanWriteAllBytes(int segmentSize)
         {
-            var stream = new WriteOnlySegmentStream(segmentSize);
+            var stream = new SegmentWriteStream(segmentSize);
 
             foreach (var datum in WriteData)
             {
@@ -83,7 +83,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         public void Write_CanWriteAllBytes(int writeSize)
         {
             var segmentSize = 5;
-            var stream = new WriteOnlySegmentStream(segmentSize);
+            var stream = new SegmentWriteStream(segmentSize);
 
 
             for (var i = 0; i < WriteData.Length; i += writeSize)

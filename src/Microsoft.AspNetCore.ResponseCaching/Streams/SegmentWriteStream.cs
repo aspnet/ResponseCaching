@@ -10,7 +10,7 @@ using Microsoft.Extensions.Internal;
 
 namespace Microsoft.AspNetCore.ResponseCaching.Internal
 {
-    internal class WriteOnlySegmentStream : Stream
+    internal class SegmentWriteStream : Stream
     {
         private readonly List<byte[]> _segments = new List<byte[]>();
         private readonly MemoryStream _bufferStream = new MemoryStream();
@@ -19,7 +19,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         private bool _closed;
         private bool _disposed;
 
-        internal WriteOnlySegmentStream(int segmentSize)
+        internal SegmentWriteStream(int segmentSize)
         {
             if (segmentSize <= 0)
             {
@@ -141,7 +141,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             {
                 throw new ArgumentOutOfRangeException(nameof(count), count, "Non-negative number required.");
             }
-            if (buffer.Length < offset + count)
+            if (count > buffer.Length - offset)
             {
                 throw new ArgumentException("Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.");
             }

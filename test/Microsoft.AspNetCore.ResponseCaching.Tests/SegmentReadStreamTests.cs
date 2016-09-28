@@ -10,7 +10,7 @@ using Xunit;
 
 namespace Microsoft.AspNetCore.ResponseCaching.Tests
 {
-    public class ReadOnlySegmentStreamTests
+    public class SegmentReadStreamTests
     {
         public class TestStreamInitInfo
         {
@@ -54,15 +54,15 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         }
 
         [Fact]
-        public void ReadOnlySegmentStream_NullSegments_Throws()
+        public void SegmentReadStream_NullSegments_Throws()
         {
-            Assert.Throws<ArgumentNullException>(() => new ReadOnlySegmentStream(null, 0));
+            Assert.Throws<ArgumentNullException>(() => new SegmentReadStream(null, 0));
         }
 
         [Fact]
         public void Position_ResetToZero_Succeeds()
         {
-            var stream = new ReadOnlySegmentStream(new List<byte[]>(), 0);
+            var stream = new SegmentReadStream(new List<byte[]>(), 0);
 
             // This should not throw
             stream.Position = 0;
@@ -76,7 +76,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         [InlineData(long.MinValue)]
         public void Position_SetToNonZero_Throws(long position)
         {
-            var stream = new ReadOnlySegmentStream(new List<byte[]>(new[] { new byte[100] }), 100);
+            var stream = new SegmentReadStream(new List<byte[]>(new[] { new byte[100] }), 100);
 
             Assert.Throws<ArgumentOutOfRangeException>(() => stream.Position = position);
         }
@@ -84,7 +84,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         [Fact]
         public void WriteOperations_Throws()
         {
-            var stream = new ReadOnlySegmentStream(new List<byte[]>(), 0);
+            var stream = new SegmentReadStream(new List<byte[]>(), 0);
 
 
             Assert.Throws<NotSupportedException>(() => stream.Flush());
@@ -94,7 +94,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         [Fact]
         public void SetLength_Throws()
         {
-            var stream = new ReadOnlySegmentStream(new List<byte[]>(), 0);
+            var stream = new SegmentReadStream(new List<byte[]>(), 0);
 
             Assert.Throws<NotSupportedException>(() => stream.SetLength(0));
         }
@@ -104,7 +104,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         [InlineData(SeekOrigin.End)]
         public void Seek_NotBegin_Throws(SeekOrigin origin)
         {
-            var stream = new ReadOnlySegmentStream(new List<byte[]>(), 0);
+            var stream = new SegmentReadStream(new List<byte[]>(), 0);
 
             Assert.Throws<ArgumentException>(() => stream.Seek(0, origin));
         }
@@ -117,7 +117,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         [InlineData(long.MinValue)]
         public void Seek_NotZero_Throws(long offset)
         {
-            var stream = new ReadOnlySegmentStream(new List<byte[]>(), 0);
+            var stream = new SegmentReadStream(new List<byte[]>(), 0);
 
             Assert.Throws<ArgumentOutOfRangeException>(() => stream.Seek(offset, SeekOrigin.Begin));
         }
@@ -126,7 +126,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         [MemberData(nameof(TestStreams))]
         public void ReadByte_CanReadAllBytes(TestStreamInitInfo info)
         {
-            var stream = new ReadOnlySegmentStream(info.Segments, info.Length);
+            var stream = new SegmentReadStream(info.Segments, info.Length);
 
             for (var i = 0; i < stream.Length; i++)
             {
@@ -142,7 +142,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         [MemberData(nameof(TestStreams))]
         public void Read_CountLessThanSegmentSize_CanReadAllBytes(TestStreamInitInfo info)
         {
-            var stream = new ReadOnlySegmentStream(info.Segments, info.Length);
+            var stream = new SegmentReadStream(info.Segments, info.Length);
             var count = info.SegmentSize - 1;
 
             for (var i = 0; i < stream.Length; i+=count)
@@ -167,7 +167,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         [MemberData(nameof(TestStreams))]
         public void Read_CountEqualSegmentSize_CanReadAllBytes(TestStreamInitInfo info)
         {
-            var stream = new ReadOnlySegmentStream(info.Segments, info.Length);
+            var stream = new SegmentReadStream(info.Segments, info.Length);
             var count = info.SegmentSize;
 
             for (var i = 0; i < stream.Length; i += count)
@@ -192,7 +192,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         [MemberData(nameof(TestStreams))]
         public void Read_CountGreaterThanSegmentSize_CanReadAllBytes(TestStreamInitInfo info)
         {
-            var stream = new ReadOnlySegmentStream(info.Segments, info.Length);
+            var stream = new SegmentReadStream(info.Segments, info.Length);
             var count = info.SegmentSize + 1;
 
             for (var i = 0; i < stream.Length; i += count)
@@ -217,8 +217,8 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         [MemberData(nameof(TestStreams))]
         public void CopyToAsync_CopiesAllBytes(TestStreamInitInfo info)
         {
-            var stream = new ReadOnlySegmentStream(info.Segments, info.Length);
-            var writeStream = new WriteOnlySegmentStream(info.SegmentSize);
+            var stream = new SegmentReadStream(info.Segments, info.Length);
+            var writeStream = new SegmentWriteStream(info.SegmentSize);
 
             stream.CopyTo(writeStream);
 
@@ -236,8 +236,8 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         public void CopyToAsync_CopiesFromCurrentPosition(TestStreamInitInfo info)
         {
             var skippedBytes = info.SegmentSize;
-            var writeStream = new WriteOnlySegmentStream((int)info.Length);
-            var stream = new ReadOnlySegmentStream(info.Segments, info.Length);
+            var writeStream = new SegmentWriteStream((int)info.Length);
+            var stream = new SegmentReadStream(info.Segments, info.Length);
             stream.Read(new byte[skippedBytes], 0, skippedBytes);
 
             stream.CopyTo(writeStream);
@@ -257,8 +257,8 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         public void CopyToAsync_CopiesFromStart_AfterReset(TestStreamInitInfo info)
         {
             var skippedBytes = info.SegmentSize;
-            var writeStream = new WriteOnlySegmentStream(info.SegmentSize);
-            var stream = new ReadOnlySegmentStream(info.Segments, info.Length);
+            var writeStream = new SegmentWriteStream(info.SegmentSize);
+            var stream = new SegmentReadStream(info.Segments, info.Length);
             stream.Read(new byte[skippedBytes], 0, skippedBytes);
 
             stream.CopyTo(writeStream);
@@ -269,7 +269,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
 
             // Reset
             stream.Position = 0;
-            writeStream = new WriteOnlySegmentStream(info.SegmentSize);
+            writeStream = new SegmentWriteStream(info.SegmentSize);
 
             stream.CopyTo(writeStream);
 

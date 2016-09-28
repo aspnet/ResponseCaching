@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.AspNetCore.ResponseCaching.Internal
 {
-    internal class ReadOnlySegmentStream : Stream
+    internal class SegmentReadStream : Stream
     {
         private readonly List<byte[]> _segments;
         private readonly long _length;
@@ -17,7 +17,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         private int _segmentOffset;
         private long _position;
 
-        internal ReadOnlySegmentStream(List<byte[]> segments, long length)
+        internal SegmentReadStream(List<byte[]> segments, long length)
         {
             if (segments == null)
             {
@@ -71,11 +71,12 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             {
                 throw new ArgumentOutOfRangeException(nameof(offset), offset, "Non-negative number required.");
             }
-            if (count < 0 )
+            // Read of length 0 will return zero and indicate end of stream.
+            if (count <= 0 )
             {
-                throw new ArgumentOutOfRangeException(nameof(count), count, "Non-negative number required.");
+                throw new ArgumentOutOfRangeException(nameof(count), count, "Positive number required.");
             }
-            if (buffer.Length < offset + count)
+            if (count > buffer.Length - offset)
             {
                 throw new ArgumentException("Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.");
             }

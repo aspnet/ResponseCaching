@@ -13,14 +13,14 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         private readonly Stream _innerStream;
         private readonly long _maxBufferSize;
         private readonly int _segmentSize;
-        private WriteOnlySegmentStream _writeOnlyStream;
+        private SegmentWriteStream _segmentWriteStream;
 
         internal ResponseCacheStream(Stream innerStream, long maxBufferSize, int segmentSize)
         {
             _innerStream = innerStream;
             _maxBufferSize = maxBufferSize;
             _segmentSize = segmentSize;
-            _writeOnlyStream = new WriteOnlySegmentStream(_segmentSize);
+            _segmentWriteStream = new SegmentWriteStream(_segmentSize);
         }
 
         internal bool BufferingEnabled { get; private set; } = true;
@@ -49,13 +49,13 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             {
                 throw new InvalidOperationException("Buffer stream cannot be retrieved since buffering is disabled.");
             }
-            return new ReadOnlySegmentStream(_writeOnlyStream.GetSegments(), _writeOnlyStream.Length);
+            return new SegmentReadStream(_segmentWriteStream.GetSegments(), _segmentWriteStream.Length);
         }
 
         internal void DisableBuffering()
         {
             BufferingEnabled = false;
-            _writeOnlyStream.Dispose();
+            _segmentWriteStream.Dispose();
         }
 
         public override void SetLength(long value)
@@ -94,13 +94,13 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
             if (BufferingEnabled)
             {
-                if (_writeOnlyStream.Length + count > _maxBufferSize)
+                if (_segmentWriteStream.Length + count > _maxBufferSize)
                 {
                     DisableBuffering();
                 }
                 else
                 {
-                    _writeOnlyStream.Write(buffer, offset, count);
+                    _segmentWriteStream.Write(buffer, offset, count);
                 }
             }
         }
@@ -119,13 +119,13 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
             if (BufferingEnabled)
             {
-                if (_writeOnlyStream.Length + count > _maxBufferSize)
+                if (_segmentWriteStream.Length + count > _maxBufferSize)
                 {
                     DisableBuffering();
                 }
                 else
                 {
-                    await _writeOnlyStream.WriteAsync(buffer, offset, count, cancellationToken);
+                    await _segmentWriteStream.WriteAsync(buffer, offset, count, cancellationToken);
                 }
             }
         }
@@ -144,13 +144,13 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
             if (BufferingEnabled)
             {
-                if (_writeOnlyStream.Length + 1 > _maxBufferSize)
+                if (_segmentWriteStream.Length + 1 > _maxBufferSize)
                 {
                     DisableBuffering();
                 }
                 else
                 {
-                    _writeOnlyStream.WriteByte(value);
+                    _segmentWriteStream.WriteByte(value);
                 }
             }
         }

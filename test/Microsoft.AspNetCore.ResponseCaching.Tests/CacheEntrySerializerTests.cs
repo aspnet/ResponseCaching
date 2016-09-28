@@ -47,7 +47,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             {
                 Created = DateTimeOffset.UtcNow,
                 StatusCode = StatusCodes.Status200OK,
-                Body = new ReadOnlySegmentStream(new List<byte[]>(new[] { body }), body.Length),
+                Body = new SegmentReadStream(new List<byte[]>(new[] { body }), body.Length),
                 Headers = headers
             };
 
@@ -64,7 +64,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             {
                 Created = DateTimeOffset.UtcNow,
                 StatusCode = StatusCodes.Status200OK,
-                Body = new ReadOnlySegmentStream(new List<byte[]>(new[] { body }), body.Length),
+                Body = new SegmentReadStream(new List<byte[]>(new[] { body }), body.Length),
                 Headers = headers
             };
 
@@ -81,7 +81,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             {
                 Created = DateTimeOffset.UtcNow,
                 StatusCode = StatusCodes.Status200OK,
-                Body = new ReadOnlySegmentStream(new List<byte[]>(new[] { body }), body.Length),
+                Body = new SegmentReadStream(new List<byte[]>(new[] { body }), body.Length),
                 Headers = headers
             };
 

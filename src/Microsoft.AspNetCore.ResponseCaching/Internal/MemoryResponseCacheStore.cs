@@ -33,7 +33,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                     Created = memoryCachedResponse.Created,
                     StatusCode = memoryCachedResponse.StatusCode,
                     Headers = memoryCachedResponse.Headers,
-                    Body = new ReadOnlySegmentStream(memoryCachedResponse.BodySegments, memoryCachedResponse.BodyLength)
+                    Body = new SegmentReadStream(memoryCachedResponse.BodySegments, memoryCachedResponse.BodyLength)
                 });
             }
             else
@@ -47,7 +47,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             if (entry is CachedResponse)
             {
                 var cachedResponse = (CachedResponse)entry;
-                var segmentStream = new WriteOnlySegmentStream(StreamUtilities.BodySegmentSize);
+                var segmentStream = new SegmentWriteStream(StreamUtilities.BodySegmentSize);
                 await cachedResponse.Body.CopyToAsync(segmentStream);
 
                 _cache.Set(
