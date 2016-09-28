@@ -15,11 +15,14 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
 {
     public class ResponseCacheMiddlewareTests
     {
+        // Use the record separator for delimiting components of the cache key to avoid possible collisions
+        private static readonly char KeyDelimiter = '\x1e';
+
         [Fact]
         public async Task TryServeFromCacheAsync_OnlyIfCached_Serves504()
         {
             var store = new TestResponseCacheStore();
-            var middleware = TestUtils.CreateTestMiddleware(store: store, keyProvider: new TestResponseCacheKeyProvider());
+            var middleware = TestUtils.CreateTestMiddleware(store: store);
             var context = TestUtils.CreateTestContext();
             context.TypedRequestHeaders.CacheControl = new CacheControlHeaderValue()
             {
@@ -34,7 +37,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         public async Task TryServeFromCacheAsync_CachedResponseNotFound_Fails()
         {
             var store = new TestResponseCacheStore();
-            var middleware = TestUtils.CreateTestMiddleware(store: store, keyProvider: new TestResponseCacheKeyProvider("BaseKey"));
+            var middleware = TestUtils.CreateTestMiddleware(store: store);
             var context = TestUtils.CreateTestContext();
 
             Assert.False(await middleware.TryServeFromCacheAsync(context));
@@ -45,11 +48,13 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         public async Task TryServeFromCacheAsync_CachedResponseFound_Succeeds()
         {
             var store = new TestResponseCacheStore();
-            var middleware = TestUtils.CreateTestMiddleware(store: store, keyProvider: new TestResponseCacheKeyProvider("BaseKey"));
+            var middleware = TestUtils.CreateTestMiddleware(store: store);
             var context = TestUtils.CreateTestContext();
+            context.HttpContext.Request.Method = "GET";
+            context.HttpContext.Request.Path = "/PATH";
 
             await store.SetAsync(
-                "BaseKey",
+                $"GET{KeyDelimiter}/PATH",
                 new CachedResponse()
                 {
                     Body = new SegmentReadStream(new List<byte[]>(0), 0)
@@ -64,31 +69,46 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         public async Task TryServeFromCacheAsync_VaryByRuleFound_CachedResponseNotFound_Fails()
         {
             var store = new TestResponseCacheStore();
-            var middleware = TestUtils.CreateTestMiddleware(store: store, keyProvider: new TestResponseCacheKeyProvider("BaseKey"));
+            var middleware = TestUtils.CreateTestMiddleware(store: store);
             var context = TestUtils.CreateTestContext();
+            context.HttpContext.Request.Method = "GET";
+            context.HttpContext.Request.Path = "/PATH";
+            context.HttpContext.Request.Headers[HeaderNames.From] = "user@example.com";
 
             await store.SetAsync(
-                "BaseKey",
-                new CachedVaryByRules(),
+                $"GET{KeyDelimiter}/PATH",
+                new CachedVaryByRules()
+                {
+                    Headers = HeaderNames.From
+                },
                 TimeSpan.Zero);
 
             Assert.False(await middleware.TryServeFromCacheAsync(context));
-            Assert.Equal(1, store.GetCount);
+            Assert.Equal(2, store.GetCount);
         }
 
         [Fact]
         public async Task TryServeFromCacheAsync_VaryByRuleFound_CachedResponseFound_Succeeds()
         {
             var store = new TestResponseCacheStore();
-            var middleware = TestUtils.CreateTestMiddleware(store: store, keyProvider: new TestResponseCacheKeyProvider("BaseKey", new[] { "VaryKey", "VaryKey2" }));
+            var middleware = TestUtils.CreateTestMiddleware(store: store);
+            var idString = FastGuid.NewGuid().IdString;
+            var fromValue = "user@example.com";
             var context = TestUtils.CreateTestContext();
+            context.HttpContext.Request.Method = "GET";
+            context.HttpContext.Request.Path = "/PATH";
+            context.HttpContext.Request.Headers[HeaderNames.From] = fromValue;
 
             await store.SetAsync(
-                "BaseKey",
-                new CachedVaryByRules(),
+                $"GET{KeyDelimiter}/PATH",
+                new CachedVaryByRules()
+                {
+                    Headers = HeaderNames.From,
+                    VaryByKeyPrefix = idString
+                },
                 TimeSpan.Zero);
             await store.SetAsync(
-                "BaseKeyVaryKey2",
+                $"{idString}{KeyDelimiter}H{KeyDelimiter}{HeaderNames.From}={fromValue}",
                 new CachedResponse()
                 {
                     Body = new SegmentReadStream(new List<byte[]>(0), 0)
@@ -96,7 +116,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
                 TimeSpan.Zero);
 
             Assert.True(await middleware.TryServeFromCacheAsync(context));
-            Assert.Equal(3, store.GetCount);
+            Assert.Equal(2, store.GetCount);
         }
 
         [Fact]

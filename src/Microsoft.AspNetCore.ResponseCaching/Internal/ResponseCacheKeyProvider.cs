@@ -2,7 +2,6 @@
 // Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
 
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using Microsoft.AspNetCore.Builder;
@@ -10,9 +9,9 @@ using Microsoft.Extensions.ObjectPool;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Primitives;
 
-namespace Microsoft.AspNetCore.ResponseCaching
+namespace Microsoft.AspNetCore.ResponseCaching.Internal
 {
-    public class ResponseCacheKeyProvider : IResponseCacheKeyProvider
+    internal class ResponseCacheKeyProvider
     {
         // Use the record separator for delimiting components of the cache key to avoid possible collisions
         private static readonly char KeyDelimiter = '\x1e';
@@ -35,13 +34,8 @@ namespace Microsoft.AspNetCore.ResponseCaching
             _options = options.Value;
         }
 
-        public virtual IEnumerable<string> CreateLookupVaryByKeys(ResponseCacheContext context)
-        {
-            return new string[] { CreateStorageVaryByKey(context) };
-        }
-
         // GET<delimiter>/PATH
-        public virtual string CreateBaseKey(ResponseCacheContext context)
+        public string CreateBaseKey(ResponseCacheContext context)
         {
             if (context == null)
             {
@@ -67,7 +61,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
         }
 
         // BaseKey<delimiter>H<delimiter>HeaderName=HeaderValue<delimiter>Q<delimiter>QueryName=QueryValue
-        public virtual string CreateStorageVaryByKey(ResponseCacheContext context)
+        public string CreateStorageVaryByKey(ResponseCacheContext context)
         {
             if (context == null)
             {
