@@ -10,34 +10,34 @@ using Microsoft.Extensions.Internal;
 
 namespace Microsoft.AspNetCore.ResponseCaching.Internal
 {
-    internal class WriteOnlyShardStream : Stream
+    internal class WriteOnlySegmentStream : Stream
     {
-        private readonly List<byte[]> _shards = new List<byte[]>();
+        private readonly List<byte[]> _segments = new List<byte[]>();
         private readonly MemoryStream _bufferStream = new MemoryStream();
-        private readonly int _shardSize;
+        private readonly int _segmentSize;
         private long _length;
         private bool _closed;
         private bool _disposed;
 
-        internal WriteOnlyShardStream(int shardSize)
+        internal WriteOnlySegmentStream(int segmentSize)
         {
-            if (shardSize <= 0)
+            if (segmentSize <= 0)
             {
-                throw new ArgumentOutOfRangeException(nameof(shardSize), shardSize, $"{nameof(shardSize)} must be greater than 0.");
+                throw new ArgumentOutOfRangeException(nameof(segmentSize), segmentSize, $"{nameof(segmentSize)} must be greater than 0.");
             }
 
-            _shardSize = shardSize;
+            _segmentSize = segmentSize;
         }
 
-        // Extracting the buffered shards closes the stream for writing
-        internal List<byte[]> GetShards()
+        // Extracting the buffered segments closes the stream for writing
+        internal List<byte[]> GetSegments()
         {
             if (!_closed)
             {
                 _closed = true;
-                FinalizeShards();
+                FinalizeSegments();
             }
-            return _shards;
+            return _segments;
         }
 
         public override bool CanRead => false;
@@ -68,13 +68,13 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             _bufferStream.Dispose();
         }
 
-        private void FinalizeShards()
+        private void FinalizeSegments()
         {
-            // Append any remaining shards
+            // Append any remaining segments
             if (_bufferStream.Length > 0)
             {
-                // Add the last shard
-                _shards.Add(_bufferStream.ToArray());
+                // Add the last segment
+                _segments.Add(_bufferStream.ToArray());
             }
 
             DisposeMemoryStream();
@@ -91,7 +91,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
                 if (disposing)
                 {
-                    _shards.Clear();
+                    _segments.Clear();
                     DisposeMemoryStream();
                 }
 
@@ -152,13 +152,13 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
             while (count > 0)
             {
-                if (_bufferStream.Length == _shardSize)
+                if ((int)_bufferStream.Length == _segmentSize)
                 {
-                    _shards.Add(_bufferStream.ToArray());
+                    _segments.Add(_bufferStream.ToArray());
                     _bufferStream.SetLength(0);
                 }
 
-                var bytesWritten = Math.Min(count, _shardSize - (int)_bufferStream.Length);
+                var bytesWritten = Math.Min(count, _segmentSize - (int)_bufferStream.Length);
 
                 _bufferStream.Write(buffer, offset, bytesWritten);
                 count -= bytesWritten;
@@ -180,9 +180,9 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 throw new ObjectDisposedException("The stream has been closed for writing.");
             }
 
-            if (_bufferStream.Length == _shardSize)
+            if ((int)_bufferStream.Length == _segmentSize)
             {
-                _shards.Add(_bufferStream.ToArray());
+                _segments.Add(_bufferStream.ToArray());
                 _bufferStream.SetLength(0);
             }
 

@@ -9,22 +9,22 @@ using System.Threading.Tasks;
 
 namespace Microsoft.AspNetCore.ResponseCaching.Internal
 {
-    internal class ReadOnlyShardStream : Stream
+    internal class ReadOnlySegmentStream : Stream
     {
-        private readonly List<byte[]> _shards;
+        private readonly List<byte[]> _segments;
         private readonly long _length;
-        private int _shardIndex;
-        private int _shardOffset;
+        private int _segmentIndex;
+        private int _segmentOffset;
         private long _position;
 
-        internal ReadOnlyShardStream(List<byte[]> shards, long length)
+        internal ReadOnlySegmentStream(List<byte[]> segments, long length)
         {
-            if (shards == null)
+            if (segments == null)
             {
-                throw new ArgumentNullException(nameof(shards));
+                throw new ArgumentNullException(nameof(segments));
             }
 
-            _shards = shards;
+            _segments = segments;
             _length = length;
         }
 
@@ -51,8 +51,8 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 }
 
                 _position = 0;
-                _shardOffset = 0;
-                _shardIndex = 0;
+                _segmentOffset = 0;
+                _segmentIndex = 0;
             }
         }
 
@@ -80,7 +80,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 throw new ArgumentException("Offset and length were out of bounds for the array or count is greater than the number of elements from index to the end of the source collection.");
             }
 
-            if (_shardIndex == _shards.Count)
+            if (_segmentIndex == _segments.Count)
             {
                 return 0;
             }
@@ -88,26 +88,26 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             var bytesRead = 0;
             while (count > 0)
             {
-                if (_shardOffset == _shards[_shardIndex].Length)
+                if (_segmentOffset == _segments[_segmentIndex].Length)
                 {
-                    // Move to the next shard
-                    _shardIndex++;
-                    _shardOffset = 0;
+                    // Move to the next segment
+                    _segmentIndex++;
+                    _segmentOffset = 0;
 
-                    if (_shardIndex == _shards.Count)
+                    if (_segmentIndex == _segments.Count)
                     {
                         break;
                     }
                 }
 
-                // Read up to the end of the shard
-                var shardBytesRead = Math.Min(count, _shards[_shardIndex].Length - _shardOffset);
-                Buffer.BlockCopy(_shards[_shardIndex], _shardOffset, buffer, offset, shardBytesRead);
-                bytesRead += shardBytesRead;
-                _shardOffset += shardBytesRead;
-                _position += shardBytesRead;
-                offset += shardBytesRead;
-                count -= shardBytesRead;
+                // Read up to the end of the segment
+                var segmentBytesRead = Math.Min(count, _segments[_segmentIndex].Length - _segmentOffset);
+                Buffer.BlockCopy(_segments[_segmentIndex], _segmentOffset, buffer, offset, segmentBytesRead);
+                bytesRead += segmentBytesRead;
+                _segmentOffset += segmentBytesRead;
+                _position += segmentBytesRead;
+                offset += segmentBytesRead;
+                count -= segmentBytesRead;
             }
 
             return bytesRead;
@@ -125,15 +125,15 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 return -1;
             }
 
-            if (_shardOffset == _shards[_shardIndex].Length)
+            if (_segmentOffset == _segments[_segmentIndex].Length)
             {
-                // Move to the next shard
-                _shardIndex++;
-                _shardOffset = 0;
+                // Move to the next segment
+                _segmentIndex++;
+                _segmentOffset = 0;
             }
 
-            var byteRead = _shards[_shardIndex][_shardOffset];
-            _shardOffset++;
+            var byteRead = _segments[_segmentIndex][_segmentOffset];
+            _segmentOffset++;
             _position++;
 
             return byteRead;
@@ -225,11 +225,11 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 throw new NotSupportedException("The destination stream does not support writing.");
             }
 
-            for (; _shardIndex < _shards.Count; _shardIndex++, _shardOffset = 0)
+            for (; _segmentIndex < _segments.Count; _segmentIndex++, _segmentOffset = 0)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                var bytesCopied = _shards[_shardIndex].Length - _shardOffset;
-                await destination.WriteAsync(_shards[_shardIndex], _shardOffset, bytesCopied, cancellationToken);
+                var bytesCopied = _segments[_segmentIndex].Length - _segmentOffset;
+                await destination.WriteAsync(_segments[_segmentIndex], _segmentOffset, bytesCopied, cancellationToken);
                 _position += bytesCopied;
             }
         }

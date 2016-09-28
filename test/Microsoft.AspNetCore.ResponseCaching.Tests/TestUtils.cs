@@ -24,7 +24,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         static TestUtils()
         {
             // Force sharding in tests
-            StreamUtilities.BodyShardSize = 10;
+            StreamUtilities.BodySegmentSize = 10;
         }
 
         internal static RequestDelegate TestRequestDelegate = async (context) =>

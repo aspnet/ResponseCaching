@@ -12,15 +12,15 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
     {
         private readonly Stream _innerStream;
         private readonly long _maxBufferSize;
-        private readonly int _shardSize;
-        private WriteOnlyShardStream _writeOnlyStream;
+        private readonly int _segmentSize;
+        private WriteOnlySegmentStream _writeOnlyStream;
 
-        internal ResponseCacheStream(Stream innerStream, long maxBufferSize, int shardSize)
+        internal ResponseCacheStream(Stream innerStream, long maxBufferSize, int segmentSize)
         {
             _innerStream = innerStream;
             _maxBufferSize = maxBufferSize;
-            _shardSize = shardSize;
-            _writeOnlyStream = new WriteOnlyShardStream(_shardSize);
+            _segmentSize = segmentSize;
+            _writeOnlyStream = new WriteOnlySegmentStream(_segmentSize);
         }
 
         internal bool BufferingEnabled { get; private set; } = true;
@@ -49,7 +49,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             {
                 throw new InvalidOperationException("Buffer stream cannot be retrieved since buffering is disabled.");
             }
-            return new ReadOnlyShardStream(_writeOnlyStream.GetShards(), _writeOnlyStream.Length);
+            return new ReadOnlySegmentStream(_writeOnlyStream.GetSegments(), _writeOnlyStream.Length);
         }
 
         internal void DisableBuffering()

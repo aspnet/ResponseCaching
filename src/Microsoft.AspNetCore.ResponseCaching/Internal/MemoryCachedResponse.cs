@@ -15,7 +15,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
         public IHeaderDictionary Headers { get; set; } = new HeaderDictionary();
 
-        public List<byte[]> Shards { get; set; }
+        public List<byte[]> BodySegments { get; set; }
 
         public long BodyLength { get; set; }
     }

@@ -33,7 +33,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                     Created = memoryCachedResponse.Created,
                     StatusCode = memoryCachedResponse.StatusCode,
                     Headers = memoryCachedResponse.Headers,
-                    Body = new ReadOnlyShardStream(memoryCachedResponse.Shards, memoryCachedResponse.BodyLength)
+                    Body = new ReadOnlySegmentStream(memoryCachedResponse.BodySegments, memoryCachedResponse.BodyLength)
                 });
             }
             else
@@ -47,8 +47,8 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             if (entry is CachedResponse)
             {
                 var cachedResponse = (CachedResponse)entry;
-                var shardStream = new WriteOnlyShardStream(StreamUtilities.BodyShardSize);
-                await cachedResponse.Body.CopyToAsync(shardStream);
+                var segmentStream = new WriteOnlySegmentStream(StreamUtilities.BodySegmentSize);
+                await cachedResponse.Body.CopyToAsync(segmentStream);
 
                 _cache.Set(
                     key,
@@ -57,8 +57,8 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                         Created = cachedResponse.Created,
                         StatusCode = cachedResponse.StatusCode,
                         Headers = cachedResponse.Headers,
-                        Shards = shardStream.GetShards(),
-                        BodyLength = shardStream.Length
+                        BodySegments = segmentStream.GetSegments(),
+                        BodyLength = segmentStream.Length
                     },
                     new MemoryCacheEntryOptions()
                     {

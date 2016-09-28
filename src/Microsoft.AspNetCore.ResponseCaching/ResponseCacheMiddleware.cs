@@ -142,7 +142,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
 
                         try
                         {
-                            await body.CopyToAsync(response.Body, StreamUtilities.BodyShardSize, context.HttpContext.RequestAborted);
+                            await body.CopyToAsync(response.Body, StreamUtilities.BodySegmentSize, context.HttpContext.RequestAborted);
                         }
                         catch (OperationCanceledException)
                         {
@@ -295,7 +295,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
         {
             // Shim response stream
             context.OriginalResponseStream = context.HttpContext.Response.Body;
-            context.ResponseCacheStream = new ResponseCacheStream(context.OriginalResponseStream, _options.MaximumBodySize, StreamUtilities.BodyShardSize);
+            context.ResponseCacheStream = new ResponseCacheStream(context.OriginalResponseStream, _options.MaximumBodySize, StreamUtilities.BodySegmentSize);
             context.HttpContext.Response.Body = context.ResponseCacheStream;
 
             // Shim IHttpSendFileFeature
