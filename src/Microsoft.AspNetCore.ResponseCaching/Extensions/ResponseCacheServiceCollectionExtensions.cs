@@ -19,6 +19,7 @@ namespace Microsoft.Extensions.DependencyInjection
 
             services.AddMemoryCache();
             services.TryAdd(ServiceDescriptor.Singleton<IResponseCachePolicyProvider, ResponseCachePolicyProvider>());
+            services.TryAdd(ServiceDescriptor.Singleton<IResponseCacheKeyProvider, ResponseCacheKeyProvider>());
             services.TryAdd(ServiceDescriptor.Singleton<IResponseCacheStore, MemoryResponseCacheStore>());
 
             return services;
