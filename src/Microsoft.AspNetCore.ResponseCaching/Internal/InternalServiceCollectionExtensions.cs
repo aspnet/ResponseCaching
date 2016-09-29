@@ -8,18 +8,18 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
-    public static class ResponseCacheServiceCollectionExtensions
+    internal static class InternalServiceCollectionExtensions
     {
-        public static IServiceCollection AddMemoryResponseCacheStore(this IServiceCollection services)
+        internal static IServiceCollection AddDistributedResponseCacheStore(this IServiceCollection services)
         {
             if (services == null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
 
-            services.AddMemoryCache();
+            services.AddDistributedMemoryCache();
             services.TryAdd(ServiceDescriptor.Singleton<IResponseCachePolicyProvider, ResponseCachePolicyProvider>());
-            services.TryAdd(ServiceDescriptor.Singleton<IResponseCacheStore, MemoryResponseCacheStore>());
+            services.TryAdd(ServiceDescriptor.Singleton<IResponseCacheStore, DistributedResponseCacheStore>());
 
             return services;
         }

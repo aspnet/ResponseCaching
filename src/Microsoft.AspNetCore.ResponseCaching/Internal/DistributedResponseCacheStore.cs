@@ -7,7 +7,7 @@ using Microsoft.Extensions.Caching.Distributed;
 
 namespace Microsoft.AspNetCore.ResponseCaching.Internal
 {
-    public class DistributedResponseCacheStore : IResponseCacheStore
+    internal class DistributedResponseCacheStore : IResponseCacheStore
     {
         private readonly IDistributedCache _cache;
 
