@@ -14,12 +14,12 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             {
                 throw new InvalidOperationException($"Another instance of {nameof(ResponseCacheFeature)} already exists. Only one instance of {nameof(ResponseCacheMiddleware)} can be configured for an application.");
             }
-            httpContext.Features.Set(new ResponseCacheFeature());
+            httpContext.Features.Set<IResponseCacheFeature>(new ResponseCacheFeature());
         }
 
         internal static void RemoveResponseCacheFeature(this HttpContext httpContext)
         {
-            httpContext.Features.Set<ResponseCacheFeature>(null);
+            httpContext.Features.Set<IResponseCacheFeature>(null);
         }
     }
 }

@@ -5,8 +5,8 @@ using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.AspNetCore.ResponseCaching
 {
-    public class ResponseCacheFeature : IResponseCacheFeature
+    public interface IResponseCacheFeature
     {
-        public StringValues VaryByQueryKeys { get; set; }
+        StringValues VaryByQueryKeys { get; set; }
     }
 }

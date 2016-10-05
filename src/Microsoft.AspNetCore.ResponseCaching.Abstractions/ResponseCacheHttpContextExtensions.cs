@@ -7,9 +7,9 @@ namespace Microsoft.AspNetCore.ResponseCaching
 {
     public static class ResponseCacheHttpContextExtensions
     {
-        public static ResponseCacheFeature GetResponseCacheFeature(this HttpContext httpContext)
+        public static IResponseCacheFeature GetResponseCacheFeature(this HttpContext httpContext)
         {
-            return httpContext.Features.Get<ResponseCacheFeature>();
+            return httpContext.Features.Get<IResponseCacheFeature>();
         }
     }
 }
