@@ -3,9 +3,6 @@
   "buildOptions": {
     "warningsAsErrors": true,
     "keyFile": "../../tools/Key.snk",
-    "nowarn": [
-      "CS1591"
-    ],
     "xmlDoc": true
   },
   "description": "ASP.NET Core response caching middleware abstractions and feature interface definitions.",
@@ -21,7 +18,7 @@
     ]
   },
   "dependencies": {
-    "Microsoft.AspNetCore.Http.Abstractions": "1.1.0-*"
+    "Microsoft.Extensions.Primitives": "1.1.0-*"
   },
   "frameworks": {
     "net451": {},
