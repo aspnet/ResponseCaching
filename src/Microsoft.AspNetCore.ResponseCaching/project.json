@@ -22,11 +22,11 @@
     ]
   },
   "dependencies": {
-    "Microsoft.AspNetCore.Http": "1.0.0",
-    "Microsoft.AspNetCore.Http.Extensions": "1.0.0",
+    "Microsoft.AspNetCore.Http": "1.0.1",
+    "Microsoft.AspNetCore.Http.Extensions": "1.0.1",
     "Microsoft.AspNetCore.ResponseCaching.Abstractions": "1.0.0",
-    "Microsoft.Extensions.Caching.Memory": "1.0.0",
-    "Microsoft.Extensions.Logging.Abstractions": "1.0.0"
+    "Microsoft.Extensions.Caching.Memory": "1.0.1",
+    "Microsoft.Extensions.Logging.Abstractions": "1.0.1"
   },
   "frameworks": {
     "net451": {},
