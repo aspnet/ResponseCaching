@@ -31,7 +31,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
         private static Action<ILogger, int, Exception> _logResponseWithUnsuccessfulStatusCodeNotCacheable;
         private static Action<ILogger, Exception> _logNotModifiedIfNoneMatchStar;
         private static Action<ILogger, EntityTagHeaderValue, Exception> _logNotModifiedIfNoneMatchMatched;
-        private static Action<ILogger, DateTimeOffset, DateTimeOffset, Exception> _logNotModifiedIfUnmodifiedSinceSatisfied;
+        private static Action<ILogger, DateTimeOffset, DateTimeOffset, Exception> _logNotModifiedIfModifiedSinceSatisfied;
         private static Action<ILogger, Exception> _logNotModifiedServed;
         private static Action<ILogger, Exception> _logCachedResponseServed;
         private static Action<ILogger, Exception> _logGatewayTimeoutServed;
@@ -119,10 +119,10 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
                 logLevel: LogLevel.Debug,
                 eventId: 19,
                 formatString: $"The ETag {{ETag}} in the '{HeaderNames.IfNoneMatch}' header matched the ETag of a cached entry.");
-            _logNotModifiedIfUnmodifiedSinceSatisfied = LoggerMessage.Define<DateTimeOffset, DateTimeOffset>(
+            _logNotModifiedIfModifiedSinceSatisfied = LoggerMessage.Define<DateTimeOffset, DateTimeOffset>(
                 logLevel: LogLevel.Debug,
                 eventId: 20,
-                formatString: $"The last modified date of {{LastModified}} is before the date {{IfUnmodifiedSince}} specified in the '{HeaderNames.IfUnmodifiedSince}' header.");
+                formatString: $"The last modified date of {{LastModified}} is before the date {{IfModifiedSince}} specified in the '{HeaderNames.IfModifiedSince}' header.");
             _logNotModifiedServed = LoggerMessage.Define(
                 logLevel: LogLevel.Information,
                 eventId: 21,
@@ -252,9 +252,9 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             _logNotModifiedIfNoneMatchMatched(logger, etag, null);
         }
 
-        internal static void LogNotModifiedIfUnmodifiedSinceSatisfied(this ILogger logger, DateTimeOffset lastModified, DateTimeOffset ifUnmodifiedSince)
+        internal static void LogNotModifiedIfModifiedSinceSatisfied(this ILogger logger, DateTimeOffset lastModified, DateTimeOffset ifModifiedSince)
         {
-            _logNotModifiedIfUnmodifiedSinceSatisfied(logger, lastModified, ifUnmodifiedSince, null);
+            _logNotModifiedIfModifiedSinceSatisfied(logger, lastModified, ifModifiedSince, null);
         }
 
         internal static void LogNotModifiedServed(this ILogger logger)

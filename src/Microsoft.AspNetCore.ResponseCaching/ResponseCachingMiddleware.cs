@@ -371,13 +371,13 @@ namespace Microsoft.AspNetCore.ResponseCaching
             }
             else
             {
-                var ifUnmodifiedSince = context.TypedRequestHeaders.IfUnmodifiedSince;
-                if (ifUnmodifiedSince != null)
+                var ifModifiedSince = context.TypedRequestHeaders.IfModifiedSince;
+                if (ifModifiedSince != null)
                 {
                     var lastModified = cachedResponseHeaders.LastModified ?? cachedResponseHeaders.Date;
-                    if (lastModified <= ifUnmodifiedSince)
+                    if (lastModified <= ifModifiedSince)
                     {
-                        context.Logger.LogNotModifiedIfUnmodifiedSinceSatisfied(lastModified.Value, ifUnmodifiedSince.Value);
+                        context.Logger.LogNotModifiedIfModifiedSinceSatisfied(lastModified.Value, ifModifiedSince.Value);
                         return true;
                     }
                 }

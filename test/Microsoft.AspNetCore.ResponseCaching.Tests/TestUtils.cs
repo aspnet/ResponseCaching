@@ -184,7 +184,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         internal static LoggedMessage ResponseWithUnsuccessfulStatusCodeNotCacheable => new LoggedMessage(17, LogLevel.Debug);
         internal static LoggedMessage NotModifiedIfNoneMatchStar => new LoggedMessage(18, LogLevel.Debug);
         internal static LoggedMessage NotModifiedIfNoneMatchMatched => new LoggedMessage(19, LogLevel.Debug);
-        internal static LoggedMessage NotModifiedIfUnmodifiedSinceSatisfied => new LoggedMessage(20, LogLevel.Debug);
+        internal static LoggedMessage NotModifiedIfModifiedSinceSatisfied => new LoggedMessage(20, LogLevel.Debug);
         internal static LoggedMessage NotModifiedServed => new LoggedMessage(21, LogLevel.Information);
         internal static LoggedMessage CachedResponseServed => new LoggedMessage(22, LogLevel.Information);
         internal static LoggedMessage GatewayTimeoutServed => new LoggedMessage(23, LogLevel.Information);

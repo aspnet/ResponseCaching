@@ -156,14 +156,14 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         }
 
         [Fact]
-        public void ContentIsNotModified_IfUnmodifiedSince_FallsbackToDateHeader()
+        public void ContentIsNotModified_IfModifiedSince_FallsbackToDateHeader()
         {
             var utcNow = DateTimeOffset.UtcNow;
             var sink = new TestSink();
             var context = TestUtils.CreateTestContext(sink);
             context.CachedResponseHeaders = new ResponseHeaders(new HeaderDictionary());
 
-            context.TypedRequestHeaders.IfUnmodifiedSince = utcNow;
+            context.TypedRequestHeaders.IfModifiedSince = utcNow;
 
             // Verify modifications in the past succeeds
             context.CachedResponseHeaders.Date = utcNow - TimeSpan.FromSeconds(10);
@@ -182,19 +182,19 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             // Verify logging
             TestUtils.AssertLoggedMessages(
                 sink.Writes,
-                LoggedMessage.NotModifiedIfUnmodifiedSinceSatisfied,
-                LoggedMessage.NotModifiedIfUnmodifiedSinceSatisfied);
+                LoggedMessage.NotModifiedIfModifiedSinceSatisfied,
+                LoggedMessage.NotModifiedIfModifiedSinceSatisfied);
         }
 
         [Fact]
-        public void ContentIsNotModified_IfUnmodifiedSince_LastModifiedOverridesDateHeader()
+        public void ContentIsNotModified_IfModifiedSince_LastModifiedOverridesDateHeader()
         {
             var utcNow = DateTimeOffset.UtcNow;
             var sink = new TestSink();
             var context = TestUtils.CreateTestContext(sink);
             context.CachedResponseHeaders = new ResponseHeaders(new HeaderDictionary());
 
-            context.TypedRequestHeaders.IfUnmodifiedSince = utcNow;
+            context.TypedRequestHeaders.IfModifiedSince = utcNow;
 
             // Verify modifications in the past succeeds
             context.CachedResponseHeaders.Date = utcNow + TimeSpan.FromSeconds(10);
@@ -216,20 +216,20 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             // Verify logging
             TestUtils.AssertLoggedMessages(
                 sink.Writes,
-                LoggedMessage.NotModifiedIfUnmodifiedSinceSatisfied,
-                LoggedMessage.NotModifiedIfUnmodifiedSinceSatisfied);
+                LoggedMessage.NotModifiedIfModifiedSinceSatisfied,
+                LoggedMessage.NotModifiedIfModifiedSinceSatisfied);
         }
 
         [Fact]
-        public void ContentIsNotModified_IfNoneMatch_Overrides_IfUnmodifiedSince_ToTrue()
+        public void ContentIsNotModified_IfNoneMatch_Overrides_IfModifiedSince_ToTrue()
         {
             var utcNow = DateTimeOffset.UtcNow;
             var sink = new TestSink();
             var context = TestUtils.CreateTestContext(sink);
             context.CachedResponseHeaders = new ResponseHeaders(new HeaderDictionary());
 
-            // This would fail the IfUnmodifiedSince checks
-            context.TypedRequestHeaders.IfUnmodifiedSince = utcNow;
+            // This would fail the IfModifiedSince checks
+            context.TypedRequestHeaders.IfModifiedSince = utcNow;
             context.CachedResponseHeaders.LastModified = utcNow + TimeSpan.FromSeconds(10);
 
             context.TypedRequestHeaders.IfNoneMatch = new List<EntityTagHeaderValue>(new[] { EntityTagHeaderValue.Any });
@@ -240,15 +240,15 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         }
 
         [Fact]
-        public void ContentIsNotModified_IfNoneMatch_Overrides_IfUnmodifiedSince_ToFalse()
+        public void ContentIsNotModified_IfNoneMatch_Overrides_IfModifiedSince_ToFalse()
         {
             var utcNow = DateTimeOffset.UtcNow;
             var sink = new TestSink();
             var context = TestUtils.CreateTestContext(sink);
             context.CachedResponseHeaders = new ResponseHeaders(new HeaderDictionary());
 
-            // This would pass the IfUnmodifiedSince checks
-            context.TypedRequestHeaders.IfUnmodifiedSince = utcNow;
+            // This would pass the IfModifiedSince checks
+            context.TypedRequestHeaders.IfModifiedSince = utcNow;
             context.CachedResponseHeaders.LastModified = utcNow - TimeSpan.FromSeconds(10);
 
             context.TypedRequestHeaders.IfNoneMatch = new List<EntityTagHeaderValue>(new[] { new EntityTagHeaderValue("\"E1\"") });

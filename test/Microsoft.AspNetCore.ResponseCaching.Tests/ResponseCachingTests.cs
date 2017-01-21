@@ -453,7 +453,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
                 {
                     var client = server.CreateClient();
                     var initialResponse = await client.GetAsync("");
-                    client.DefaultRequestHeaders.IfUnmodifiedSince = DateTimeOffset.MaxValue;
+                    client.DefaultRequestHeaders.IfModifiedSince = DateTimeOffset.MaxValue;
                     var subsequentResponse = await client.GetAsync("");
 
                     initialResponse.EnsureSuccessStatusCode();
@@ -473,7 +473,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
                 {
                     var client = server.CreateClient();
                     var initialResponse = await client.GetAsync("");
-                    client.DefaultRequestHeaders.IfUnmodifiedSince = DateTimeOffset.MinValue;
+                    client.DefaultRequestHeaders.IfModifiedSince = DateTimeOffset.MinValue;
                     var subsequentResponse = await client.GetAsync("");
 
                     await AssertCachedResponseAsync(initialResponse, subsequentResponse);
