@@ -133,7 +133,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
                     response.StatusCode = context.CachedResponse.StatusCode;
                     foreach (var header in context.CachedResponse.Headers)
                     {
-                        response.Headers.Add(header);
+                        response.Headers[header.Key] = header.Value;
                     }
 
                     response.Headers[HeaderNames.Age] = context.CachedEntryAge.Value.TotalSeconds.ToString("F0", CultureInfo.InvariantCulture);
@@ -262,7 +262,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
                 {
                     if (!string.Equals(header.Key, HeaderNames.Age, StringComparison.OrdinalIgnoreCase))
                     {
-                        context.CachedResponse.Headers.Add(header);
+                        context.CachedResponse.Headers[header.Key] = header.Value;
                     }
                 }
             }
