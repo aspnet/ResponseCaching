@@ -1,5 +1,5 @@
 {
-  "version": "1.0.2",
+  "version": "1.0.3",
   "buildOptions": {
     "warningsAsErrors": true,
     "allowUnsafe": true,
@@ -22,9 +22,9 @@
     ]
   },
   "dependencies": {
-    "Microsoft.AspNetCore.Http": "1.0.3",
-    "Microsoft.AspNetCore.Http.Extensions": "1.0.3",
-    "Microsoft.AspNetCore.ResponseCaching.Abstractions": "1.0.2",
+    "Microsoft.AspNetCore.Http": "1.0.4",
+    "Microsoft.AspNetCore.Http.Extensions": "1.0.4",
+    "Microsoft.AspNetCore.ResponseCaching.Abstractions": "1.0.3",
     "Microsoft.Extensions.Caching.Memory": "1.0.2",
     "Microsoft.Extensions.Logging.Abstractions": "1.0.2"
   },
