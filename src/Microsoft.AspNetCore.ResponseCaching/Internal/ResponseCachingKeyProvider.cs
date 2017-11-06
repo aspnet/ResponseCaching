@@ -13,14 +13,22 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 {
     public class ResponseCachingKeyProvider : IResponseCachingKeyProvider
     {
+        private const string UseMethodPathCacheKeySwitch = "Switch.Microsoft.AspNetCore.ResponseCaching.UseMethodPathCacheKey";
+
         // Use the record separator for delimiting components of the cache key to avoid possible collisions
         private static readonly char KeyDelimiter = '\x1e';
 
         private readonly ObjectPool<StringBuilder> _builderPool;
         private readonly ResponseCachingOptions _options;
 
+        internal bool UseMethodPathCacheKey { get; set; }
+
         public ResponseCachingKeyProvider(ObjectPoolProvider poolProvider, IOptions<ResponseCachingOptions> options)
         {
+            var isEnabled = false;
+            AppContext.TryGetSwitch(UseMethodPathCacheKeySwitch, out isEnabled);
+            UseMethodPathCacheKey = isEnabled;
+
             if (poolProvider == null)
             {
                 throw new ArgumentNullException(nameof(poolProvider));
@@ -39,7 +47,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
             return new string[] { CreateStorageVaryByKey(context) };
         }
 
-        // GET<delimiter>/PATH
+        // GET<delimiter>SCHEME<delimiter>HOST:PORT/PATHBASE/PATH
         public string CreateBaseKey(ResponseCachingContext context)
         {
             if (context == null)
@@ -52,17 +60,42 @@ namespace Microsoft.AspNetCore.ResponseCaching.Internal
 
             try
             {
-                builder
-                    .AppendUpperInvariant(request.Method)
-                    .Append(KeyDelimiter);
-
-                if (_options.UseCaseSensitivePaths)
+                if (UseMethodPathCacheKey)
                 {
-                    builder.Append(request.Path.Value);
+                    builder
+                        .AppendUpperInvariant(request.Method)
+                        .Append(KeyDelimiter);
+
+                    if (_options.UseCaseSensitivePaths)
+                    {
+                        builder.Append(request.Path.Value);
+                    }
+                    else
+                    {
+                        builder.AppendUpperInvariant(request.Path.Value);
+                    }
                 }
                 else
                 {
-                    builder.AppendUpperInvariant(request.Path.Value);
+                    builder
+                        .AppendUpperInvariant(request.Method)
+                        .Append(KeyDelimiter)
+                        .AppendUpperInvariant(request.Scheme)
+                        .Append(KeyDelimiter)
+                        .AppendUpperInvariant(request.Host.Value);
+
+                    if (_options.UseCaseSensitivePaths)
+                    {
+                        builder
+                            .Append(request.PathBase.Value)
+                            .Append(request.Path.Value);
+                    }
+                    else
+                    {
+                        builder
+                            .AppendUpperInvariant(request.PathBase.Value)
+                            .AppendUpperInvariant(request.Path.Value);
+                    }
                 }
 
                 return builder.ToString();
