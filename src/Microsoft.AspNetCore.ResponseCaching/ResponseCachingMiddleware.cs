@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.Features;
@@ -25,13 +26,15 @@ namespace Microsoft.AspNetCore.ResponseCaching
         private readonly IResponseCachingPolicyProvider _policyProvider;
         private readonly IResponseCache _cache;
         private readonly IResponseCachingKeyProvider _keyProvider;
+        private readonly DiagnosticSource _diagnosticSource;
 
         public ResponseCachingMiddleware(
             RequestDelegate next,
             IOptions<ResponseCachingOptions> options,
             ILoggerFactory loggerFactory,
             IResponseCachingPolicyProvider policyProvider,
-            IResponseCachingKeyProvider keyProvider)
+            IResponseCachingKeyProvider keyProvider,
+            DiagnosticSource diagnosticSource)
             : this(
                 next,
                 options,
@@ -40,7 +43,8 @@ namespace Microsoft.AspNetCore.ResponseCaching
                 new MemoryResponseCache(new MemoryCache(new MemoryCacheOptions
                 {
                     SizeLimit = options.Value.SizeLimit
-                })), keyProvider)
+                })), keyProvider,
+                diagnosticSource)
         { }
 
         // for testing
@@ -50,39 +54,17 @@ namespace Microsoft.AspNetCore.ResponseCaching
             ILoggerFactory loggerFactory,
             IResponseCachingPolicyProvider policyProvider,
             IResponseCache cache,
-            IResponseCachingKeyProvider keyProvider)
+            IResponseCachingKeyProvider keyProvider,
+            DiagnosticSource diagnosticSource)
         {
-            if (next == null)
-            {
-                throw new ArgumentNullException(nameof(next));
-            }
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-            if (loggerFactory == null)
-            {
-                throw new ArgumentNullException(nameof(loggerFactory));
-            }
-            if (policyProvider == null)
-            {
-                throw new ArgumentNullException(nameof(policyProvider));
-            }
-            if (cache == null)
-            {
-                throw new ArgumentNullException(nameof(cache));
-            }
-            if (keyProvider == null)
-            {
-                throw new ArgumentNullException(nameof(keyProvider));
-            }
 
-            _next = next;
-            _options = options.Value;
-            _logger = loggerFactory.CreateLogger<ResponseCachingMiddleware>();
-            _policyProvider = policyProvider;
-            _cache = cache;
-            _keyProvider = keyProvider;
+            _next = next ?? throw new ArgumentNullException(nameof(next));
+            _options = (options ?? throw new ArgumentNullException(nameof(options))).Value;
+            _logger = (loggerFactory ?? throw new ArgumentNullException(nameof(loggerFactory))).CreateLogger<ResponseCachingMiddleware>();
+            _policyProvider = policyProvider ?? throw new ArgumentNullException(nameof(policyProvider));
+            _cache = cache ?? throw new ArgumentNullException(nameof(cache));
+            _keyProvider = keyProvider ?? throw new ArgumentNullException(nameof(keyProvider));
+            _diagnosticSource = diagnosticSource ?? throw new ArgumentNullException(nameof(diagnosticSource));
         }
 
         public async Task Invoke(HttpContext httpContext)
@@ -196,6 +178,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
 
         internal async Task<bool> TryServeFromCacheAsync(ResponseCachingContext context)
         {
+            _diagnosticSource.BeforeTryServeFromCache(context);
             context.BaseKey = _keyProvider.CreateBaseKey(context);
             var cacheEntry = await _cache.GetAsync(context.BaseKey);
 
@@ -209,6 +192,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
                 {
                     if (await TryServeCachedResponseAsync(context, await _cache.GetAsync(varyKey)))
                     {
+                        _diagnosticSource.AfterTryServeFromCache(context, true);
                         return true;
                     }
                 }
@@ -217,6 +201,7 @@ namespace Microsoft.AspNetCore.ResponseCaching
             {
                 if (await TryServeCachedResponseAsync(context, cacheEntry))
                 {
+                    _diagnosticSource.AfterTryServeFromCache(context, true);
                     return true;
                 }
             }
@@ -225,10 +210,12 @@ namespace Microsoft.AspNetCore.ResponseCaching
             {
                 _logger.LogGatewayTimeoutServed();
                 context.HttpContext.Response.StatusCode = StatusCodes.Status504GatewayTimeout;
+                _diagnosticSource.AfterTryServeFromCache(context, true);
                 return true;
             }
 
             _logger.LogNoResponseServed();
+            _diagnosticSource.AfterTryServeFromCache(context, false);
             return false;
         }
 
@@ -343,6 +330,8 @@ namespace Microsoft.AspNetCore.ResponseCaching
                 var bufferStream = context.ResponseCachingStream.GetBufferStream();
                 if (!contentLength.HasValue || contentLength == bufferStream.Length)
                 {
+                    _diagnosticSource.BeforeCacheResponse(context);
+
                     var response = context.HttpContext.Response;
                     // Add a content-length if required
                     if (!response.ContentLength.HasValue && StringValues.IsNullOrEmpty(response.Headers[HeaderNames.TransferEncoding]))
@@ -353,6 +342,8 @@ namespace Microsoft.AspNetCore.ResponseCaching
                     context.CachedResponse.Body = bufferStream;
                     _logger.LogResponseCached();
                     await _cache.SetAsync(context.StorageVaryKey ?? context.BaseKey, context.CachedResponse, context.CachedResponseValidFor);
+
+                    _diagnosticSource.AfterCacheResponse(context);
                 }
                 else
                 {
