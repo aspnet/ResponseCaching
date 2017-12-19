@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net.Http;
 using System.Text;
 using System.Threading;
@@ -164,7 +165,8 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             ResponseCachingOptions options = null,
             TestSink testSink = null,
             IResponseCachingKeyProvider keyProvider = null,
-            IResponseCachingPolicyProvider policyProvider = null)
+            IResponseCachingPolicyProvider policyProvider = null,
+            DiagnosticSource diagnosticSource = null)
         {
             if (next == null)
             {
@@ -186,6 +188,10 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
             {
                 policyProvider = new TestResponseCachingPolicyProvider();
             }
+            if (diagnosticSource == null)
+            {
+                diagnosticSource = new DiagnosticListener("Microsoft.AspNetCore.ResponseCaching");
+            }
 
             return new ResponseCachingMiddleware(
                 next,
@@ -193,7 +199,7 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
                 testSink == null ? (ILoggerFactory)NullLoggerFactory.Instance : new TestLoggerFactory(testSink, true),
                 policyProvider,
                 cache,
-                keyProvider);
+                keyProvider, diagnosticSource);
         }
 
         internal static ResponseCachingContext CreateTestContext()

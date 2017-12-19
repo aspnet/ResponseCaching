@@ -10,6 +10,7 @@
     <MicrosoftAspNetCoreServerKestrelPackageVersion>2.1.0-preview1-27849</MicrosoftAspNetCoreServerKestrelPackageVersion>
     <MicrosoftAspNetCoreTestHostPackageVersion>2.1.0-preview1-27849</MicrosoftAspNetCoreTestHostPackageVersion>
     <MicrosoftExtensionsCachingMemoryPackageVersion>2.1.0-preview1-27849</MicrosoftExtensionsCachingMemoryPackageVersion>
+    <MicrosoftExtensionsDiagnosticAdapterPackageVersion>2.1.0-preview1-27849</MicrosoftExtensionsDiagnosticAdapterPackageVersion>
     <MicrosoftExtensionsLoggingAbstractionsPackageVersion>2.1.0-preview1-27849</MicrosoftExtensionsLoggingAbstractionsPackageVersion>
     <MicrosoftExtensionsLoggingTestingPackageVersion>2.1.0-preview1-27849</MicrosoftExtensionsLoggingTestingPackageVersion>
     <MicrosoftExtensionsPrimitivesPackageVersion>2.1.0-preview1-27849</MicrosoftExtensionsPrimitivesPackageVersion>
