@@ -28,6 +28,22 @@ namespace Microsoft.AspNetCore.ResponseCaching.Tests
         }
 
         [Fact]
+        public void ResponseCachingKeyProvider_CreateStorageBaseKey_IncludesOnlyNormalizedMethodAndPath_InQuirkMode()
+        {
+            var cacheKeyProvider = TestUtils.CreateTestKeyProvider();
+            ((ResponseCachingKeyProvider)cacheKeyProvider).UseMethodPathCacheKey = true;
+            var context = TestUtils.CreateTestContext();
+            context.HttpContext.Request.Method = "head";
+            context.HttpContext.Request.Path = "/path/subpath";
+            context.HttpContext.Request.Scheme = "https";
+            context.HttpContext.Request.Host = new HostString("example.com", 80);
+            context.HttpContext.Request.PathBase = "/pathBase";
+            context.HttpContext.Request.QueryString = new QueryString("?query.Key=a&query.Value=b");
+
+            Assert.Equal($"HEAD{KeyDelimiter}/PATH/SUBPATH", cacheKeyProvider.CreateBaseKey(context));
+        }
+
+        [Fact]
         public void ResponseCachingKeyProvider_CreateStorageBaseKey_CaseInsensitivePath_NormalizesPath()
         {
             var cacheKeyProvider = TestUtils.CreateTestKeyProvider(new ResponseCachingOptions()

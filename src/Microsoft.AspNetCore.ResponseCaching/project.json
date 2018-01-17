@@ -29,7 +29,15 @@
     "Microsoft.Extensions.Logging.Abstractions": "1.0.2"
   },
   "frameworks": {
-    "net451": {},
-    "netstandard1.3": {}
+    "net451": {
+      "frameworkAssemblies": {
+        "System.Configuration": ""
+      }
+    },
+    "netstandard1.3": {
+      "dependencies": {
+        "System.AppContext": "4.3.0"
+      }
+    }
   }
 }
